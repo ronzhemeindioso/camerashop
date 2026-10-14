@@ -59,15 +59,18 @@ exports.newProduct = async (req, res, next) => {
 
 exports.getProducts = async (req, res) => {
 
-    const resPerPage = 2;
+    const resPerPage = 8;
     const productsCount = await Product.countDocuments({ deletedAt: null });
 
     // const products = await Product.find()
     const apiFeatures = new APIFeatures(Product.find({ deletedAt: null }), req.query).search().filter()
 
+    // Count everything that matches the search/price filter BEFORE paginating,
+    // so the frontend knows how many pages there really are
+    const filteredProductsCount = await apiFeatures.query.clone().countDocuments();
+
     apiFeatures.pagination(resPerPage);
     const products = await apiFeatures.query;
-    let filteredProductsCount = products.length;
 
     if (!products)
         return res.status(400).json({ message: 'error loading products' })

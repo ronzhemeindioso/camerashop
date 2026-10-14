@@ -238,9 +238,9 @@ function App() {
                 <ProductReviews />
               </ProtectedRoute>} />
         </Routes>
+        <Footer />
       </Router>
 
-      <Footer />
       <ToastContainer />
     </>
   )

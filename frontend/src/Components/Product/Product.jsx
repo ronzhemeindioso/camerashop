@@ -2,32 +2,33 @@ import React from 'react'
 import { Link } from 'react-router-dom';
 
 const Product = ({ product }) => {
-    console.log(product)
-    return (
+    const image = product.images && product.images[0] ? product.images[0].url : null
+    const soldOut = product.stock === 0
 
-        // <ProductDetails item={item} />
-        <div className="col-sm-12 col-md-6 col-lg-3 my-3">
-            <div className="card p-3 rounded">
-                <img
-                    className="card-img-top mx-auto"
-                    src={product.images[0] ? product.images[0].url : null}
-                />
-                <div className="card-body d-flex flex-column">
-                    <h5 className="card-title">
-                        {/* <a href="{`/product/${product._id}`}">{product.name}</a> */}
-                        <Link to={`/product/${product._id}`} >{product.name}</Link>
-                    </h5>
-                    <div className="ratings mt-auto">
-                        <div className="rating-outer">
-                            <div className="rating-inner" style={{ width: `${(product.ratings / 5) * 100}%` }}></div>
-                        </div>
-                        <span id="no_of_reviews">({product.numOfReviews} reviews)</span>
+    return (
+        <article className="product-card">
+            <Link to={`/product/${product._id}`} className="product-card-media" aria-label={product.name}>
+                {image && <img src={image} alt={product.name} />}
+                {soldOut && <span className="product-badge">Sold out</span>}
+            </Link>
+
+            <div className="product-card-body">
+                <h3 className="product-card-title">
+                    <Link to={`/product/${product._id}`}>{product.name}</Link>
+                </h3>
+
+                <div className="ratings">
+                    <div className="rating-outer">
+                        <div className="rating-inner" style={{ width: `${(product.ratings / 5) * 100}%` }}></div>
                     </div>
-                    <p className="card-text">${product.price}</p>
-                    <Link to={`/product/${product._id}`} id="view_btn" className="btn btn-block">View Details</Link>
+                    <span id="no_of_reviews">({product.numOfReviews})</span>
                 </div>
+
+                <p className="product-card-price">${product.price}</p>
+
+                <Link to={`/product/${product._id}`} className="product-card-btn">View details</Link>
             </div>
-        </div>
+        </article>
     )
 }
 

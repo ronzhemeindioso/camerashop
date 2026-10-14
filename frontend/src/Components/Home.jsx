@@ -3,141 +3,131 @@ import { useParams } from 'react-router-dom'
 import MetaData from './Layout/MetaData'
 import Product from './Product/Product'
 import Loader from './Layout/Loader'
-// import Stack from '@mui/material/Stack'
-import Box from '@mui/material/Box';
-import Slider from '@mui/material/Slider';
-import Stack from '@mui/material/Stack'
+import Slider from '@mui/material/Slider'
 import Pagination from '@mui/material/Pagination'
-// import axios from 'axios'
 import { useDispatch, useSelector } from 'react-redux'
 
 import { getProducts } from '../actions/productActions'
+
+const PURPLE = '#7e3d84'
+
 const Home = () => {
-    const { loading, products, error, productsCount, resPerPage, filteredProductsCount } = useSelector(state => state.products);
-    // const [products, setProducts] = useState([])
-    // const [loading, setLoading] = useState(true)
+    const { loading, products, resPerPage, filteredProductsCount } = useSelector(state => state.products);
+    // `price` is what we fetch with; `priceDraft` follows the slider while it is being dragged
     const [price, setPrice] = useState([1, 1000]);
-    // const [productsCount, setProductsCount] = useState(0)
-    // const [resPerPage, setResPerPage] = useState(0)
-    // const [filteredProductsCount, setFilteredProductsCount] = useState(0)
+    const [priceDraft, setPriceDraft] = useState([1, 1000]);
     const [currentPage, setCurrentPage] = useState(1)
     let { keyword } = useParams();
     const dispatch = useDispatch();
-    // console.log(products)
-    // const getProducts = async (keyword = '', price, page = 1) => {
 
-    //     let link = `http://localhost:4001/api/v1/products?keyword=${keyword}&price[gte]=${price[0]}&price[lte]=${price[1]}&page=${page}`
+    // Total products matching the current search and price filter
+    const count = filteredProductsCount
 
-    //     let res = await axios.get(link)
-    //     console.log(res.data.products)
-    //     setProducts(res.data.products)
-    //     setProductsCount(res.data.productsCount)
-    //     setFilteredProductsCount(res.data.filteredProductsCount)
-    //     setResPerPage(res.data.resPerPage)
-    //     setLoading(false)
-    // }
-    // getProducts()
-    // console.log(products)
-
-    let count = productsCount;
-
-    if (keyword) {
-        count = filteredProductsCount
-    }
-
-    const handleChange = (event, newValue) => {
-        setPrice(newValue);
-    };
-
-    function valuetext(price) {
-        return `P${price.toString()}`;
-    }
-
-    // useEffect(() => {
-    //     getProducts(keyword, price, currentPage)
-    // }, [keyword, price, currentPage]);
     useEffect(() => {
         dispatch(getProducts(currentPage, keyword, price,))
     }, [currentPage, keyword, price,]);
+
+    const applyPrice = (event, value) => {
+        setCurrentPage(1)
+        setPrice(value)
+    }
+
+    const resetPrice = () => {
+        setCurrentPage(1)
+        setPriceDraft([1, 1000])
+        setPrice([1, 1000])
+    }
+
+    const priceIsFiltered = price[0] !== 1 || price[1] !== 1000
+
     return (
         <>
             <MetaData title={'shop Here'} />
-            {loading ? <Loader /> :
-                (<div className="container container-fluid">
-                    <h1 id="products_heading">Latest Products</h1>
-                    <section id="products" className="container mt-5">
-                        {/* <div className="row">
-                        {products && products.map(product => (
-                            <Product key={product._id} product={product} />
-                            // <Product product={product} />
-                        ))}
-                    </div> */}
 
-                        <div className="row">
-                            {keyword ? (
-                                <>
-                                    <div className="col-6 col-md-3 mt-5 mb-5">
-                                        <Box sx={{ width: 150 }}>
-                                            <Slider
-                                                getAriaLabel={() => 'Price Filter'}
-                                                value={price}
-                                                onChange={handleChange}
-                                                valueLabelDisplay="on"
-                                                getAriaValueText={valuetext}
-                                                min={1}
-                                                max={1000}
-
-                                            />
-                                        </Box>
-                                        <div className="mt-5">
-                                            <h4 className="mb-3">
-                                                Categories
-                                            </h4>
-
-                                        </div>
-                                    </div>
-
-                                    <div className="col-6 col-md-9">
-                                        <div className="row">
-                                            {products.map(product => (
-                                                <Product key={product._id} product={product} />
-                                            ))}
-                                        </div>
-                                    </div>
-                                </>
-                            ) : (
-                                products.map(product => (
-                                    <Product key={product._id} product={product} />
-                                ))
-                            )}
-
+            {!keyword && (
+                <section className="store-hero">
+                    <div className="store-hero-inner">
+                        <div className="store-hero-copy">
+                            <h1>Camera gear for every shot</h1>
+                            <p>Cameras, lenses, lighting and accessories, with secure checkout and order tracking.</p>
+                            <a href="#products" className="store-hero-btn">Shop latest products</a>
                         </div>
-                        {resPerPage < count && (
-                            <div className="d-flex justify-content-center mt-5">
-                                <Stack spacing={2}>
-                                    <Pagination
-                                        count={Math.ceil(count / resPerPage)}
-                                        page={currentPage}
-                                        onChange={(event, value) => setCurrentPage(value)}
+                        <div className="store-hero-lens" aria-hidden="true">
+                            <span></span>
+                        </div>
+                    </div>
+                </section>
+            )}
 
-                                        color="primary"
-                                        variant="outlined"
-                                        shape="rounded"
-                                        showFirstButton
-                                        showLastButton
-                                        size="large"
-                                        sx={{
-                                            backgroundColor: 'white',
-
-                                        }}
-                                    />
-                                </Stack>
-                            </div>
+            <div className="store-layout" id="products">
+                <aside className="store-sidebar">
+                    <div className="filter-card">
+                        <h2>Price</h2>
+                        <Slider
+                            getAriaLabel={() => 'Price filter'}
+                            value={priceDraft}
+                            onChange={(e, v) => setPriceDraft(v)}
+                            onChangeCommitted={applyPrice}
+                            valueLabelDisplay="auto"
+                            getAriaValueText={(v) => `$${v}`}
+                            min={1}
+                            max={1000}
+                            sx={{ color: PURPLE, mt: 1 }}
+                        />
+                        <div className="filter-range">
+                            <span>${priceDraft[0]}</span>
+                            <span>${priceDraft[1]}</span>
+                        </div>
+                        {priceIsFiltered && (
+                            <button type="button" className="filter-clear" onClick={resetPrice}>Clear price filter</button>
                         )}
-                    </section>
-                </div>)}
-        </>
+                    </div>
+                </aside>
 
+                <section className="store-results">
+                    <div className="store-toolbar">
+                        <h1 id="products_heading">{keyword ? `Results for "${keyword}"` : 'Latest Products'}</h1>
+                        {!loading && <span className="store-count">{count} {count === 1 ? 'product' : 'products'}</span>}
+                    </div>
+
+                    {loading ? (
+                        <div className="store-loading"><Loader /></div>
+                    ) : products.length === 0 ? (
+                        <div className="store-empty">
+                            <i className="fa fa-search" aria-hidden="true"></i>
+                            <h2>No products found</h2>
+                            <p>Try a different search or widen the price range.</p>
+                        </div>
+                    ) : (
+                        <div className="product-grid">
+                            {products.map(product => (
+                                <Product key={product._id} product={product} />
+                            ))}
+                        </div>
+                    )}
+
+                    {!loading && resPerPage < count && (
+                        <div className="store-pagination">
+                            <Pagination
+                                count={Math.ceil(count / resPerPage)}
+                                page={currentPage}
+                                onChange={(event, value) => setCurrentPage(value)}
+                                variant="outlined"
+                                shape="rounded"
+                                showFirstButton
+                                showLastButton
+                                size="large"
+                                sx={{
+                                    '& .MuiPaginationItem-root': { color: '#5a2a61', borderColor: '#e6d8ef', backgroundColor: '#fff' },
+                                    '& .MuiPaginationItem-root.Mui-selected': { backgroundColor: PURPLE, color: '#fff', borderColor: PURPLE },
+                                    '& .MuiPaginationItem-root.Mui-selected:hover': { backgroundColor: '#652f6b' },
+                                }}
+                            />
+                        </div>
+                    )}
+                </section>
+            </div>
+        </>
     )
 }
 

@@ -4,6 +4,7 @@ import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { useDispatch, useSelector } from 'react-redux'
 import { logout } from '../../actions/userActions'
+import Search from './Search'
 
 const navLinks = [
     { to: '/', hash: '', label: 'Home' },
@@ -37,6 +38,8 @@ const Header = () => {
     }
 
     return (
+        <>
+        <div className="announce-bar">Secure checkout on every order</div>
         <header className="site-header">
             <div className="site-nav">
                 <Link to="/" className="brand" onClick={closeMenu}>
@@ -68,6 +71,8 @@ const Header = () => {
                             </li>
                         ))}
                     </ul>
+
+                    <Search />
 
                     <div className="nav-actions">
                         {user ? (
@@ -109,6 +114,7 @@ const Header = () => {
                 </nav>
             </div>
         </header>
+        </>
     )
 }
 
