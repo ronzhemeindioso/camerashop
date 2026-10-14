@@ -9,6 +9,7 @@ import axios from 'axios';
 // import { getUser, authenticate } from '../../Utils/helpers';
 import { useDispatch, useSelector } from 'react-redux'
 import { login, clearErrors } from '../../actions/userActions'
+import './Login.css'
 
 const Login = () => {
     const { isAuthenticated, error, loading, user } = useSelector(state => state.auth)
@@ -72,56 +73,82 @@ const Login = () => {
         }
     }, [error, isAuthenticated, user, dispatch, navigate, redirect])
 
+    useEffect(() => {
+        document.body.classList.add('login-mode')
+        return () => document.body.classList.remove('login-mode')
+    }, [])
+
     return (
         <>
             {loading ? <Loader /> : (
                 <>
                     <MetaData title={'Login'} />
 
-                    <div className="row wrapper">
-                        <div className="col-10 col-lg-5">
-                            <form className="shadow-lg"
-                                onSubmit={submitHandler}
-                            >
-                                <h1 className="mb-3">Login</h1>
-                                <div className="form-group">
-                                    <label htmlFor="email_field">Email</label>
-                                    <input
-                                        type="email"
-                                        id="email_field"
-                                        className="form-control"
-                                        value={email}
-                                        onChange={(e) => setEmail(e.target.value)}
-                                    />
+                    <div className="login-page">
+                        <div className="login-card">
+                            {/* Left: welcome panel */}
+                            <aside className="login-side">
+                                <span className="login-circle login-circle-1" />
+                                <span className="login-circle login-circle-2" />
+                                <span className="login-circle login-circle-3" />
+
+                                <Link to="/" className="login-brand">Aperture</Link>
+
+                                <div className="login-side-body">
+                                    <h2>Hey There!</h2>
+                                    <p>
+                                        Welcome back.<br />
+                                        You are just one step away from your cart.
+                                    </p>
+                                    <span className="login-side-question">Don't have an account?</span>
+                                    <Link to="/register" className="login-ghost-btn">Sign Up</Link>
                                 </div>
+                            </aside>
 
-                                <div className="form-group">
-                                    <label htmlFor="password_field">Password</label>
-                                    <input
-                                        type="password"
-                                        id="password_field"
-                                        className="form-control"
-                                        value={password}
-                                        onChange={(e) => setPassword(e.target.value)}
-                                    />
-                                </div>
+                            {/* Right: form */}
+                            <section className="login-form-wrap">
+                                <form onSubmit={submitHandler} className="login-form">
+                                    <h1>SIGN IN</h1>
 
-                                <Link to="/password/forgot" className="float-right mb-4">Forgot Password?</Link>
+                                    <div className="login-field">
+                                        <label htmlFor="email_field">Email</label>
+                                        <i className="fa fa-envelope-o" aria-hidden="true"></i>
+                                        <input
+                                            type="email"
+                                            id="email_field"
+                                            value={email}
+                                            onChange={(e) => setEmail(e.target.value)}
+                                            autoComplete="email"
+                                        />
+                                    </div>
 
-                                <button
-                                    id="login_button"
-                                    type="submit"
-                                    className="btn btn-block py-3"
-                                >
-                                    LOGIN
-                                </button>
+                                    <div className="login-field">
+                                        <label htmlFor="password_field">Password</label>
+                                        <i className="fa fa-lock" aria-hidden="true"></i>
+                                        <input
+                                            type="password"
+                                            id="password_field"
+                                            value={password}
+                                            onChange={(e) => setPassword(e.target.value)}
+                                            autoComplete="current-password"
+                                        />
+                                    </div>
 
-                                <Link to="/register" className="float-right mt-3">New User?</Link>
-                            </form>
+                                    <div className="login-row">
+                                        <Link to="/password/forgot" className="login-forgot">Forgot Password?</Link>
+                                    </div>
+
+                                    <button id="login_button" type="submit" className="login-submit">
+                                        SIGN IN
+                                    </button>
+
+                                    <p className="login-mobile-signup">
+                                        New user? <Link to="/register">Create an account</Link>
+                                    </p>
+                                </form>
+                            </section>
                         </div>
                     </div>
-
-
                 </>
             )}
         </>

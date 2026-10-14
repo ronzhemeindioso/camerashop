@@ -28,7 +28,7 @@ const HomePage = () => {
             <section id="about" className="page-section section-block">
                 <h2>About Us</h2>
                 <p>
-                    ShopIT is an online store committed to offering quality products at fair prices,
+                    Aperture is an online store committed to offering quality products at fair prices,
                     with a simple and dependable shopping experience from browsing to delivery.
                 </p>
                 <p>
@@ -41,7 +41,7 @@ const HomePage = () => {
                 <h2>Contact Us</h2>
                 <p>For questions about orders, products, or your account, please reach out to us.</p>
                 <ul className="contact-list">
-                    <li><strong>Email:</strong> support@shopit.com</li>
+                    <li><strong>Email:</strong> support@aperture.com</li>
                     <li><strong>Phone:</strong> +63 900 000 0000</li>
                     <li><strong>Hours:</strong> Monday to Friday, 9:00 AM – 6:00 PM</li>
                 </ul>

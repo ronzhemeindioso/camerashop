@@ -40,7 +40,8 @@ const Header = () => {
         <header className="site-header">
             <div className="site-nav">
                 <Link to="/" className="brand" onClick={closeMenu}>
-                    Shop<b>IT</b>
+                    <span className="brand-icon"><i className="fa fa-camera" aria-hidden="true"></i></span>
+                    Aperture
                 </Link>
 
                 <button
