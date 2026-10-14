@@ -1,0 +1,1263 @@
+/* ===== Admin theme ===== */
+body.admin-mode {
+  background-color: #f6effa;
+}
+
+/* Break out of the Vite template's 1126px centered #root so admin pages span the full screen */
+body.admin-mode #root {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  border-inline: 0;
+  text-align: left;
+}
+
+body.admin-mode footer {
+  display: none;
+}
+
+.admin-page {
+  --adm-bg: #f6effa;
+  --adm-card: #ffffff;
+  --adm-border: #e6d8ef;
+  --adm-text: #2a1633;
+  --adm-muted: #7a6788;
+  --adm-accent: #7e3d84;
+  --adm-accent-hover: #652f6b;
+  --adm-accent-soft: #ecdcf3;
+  min-height: 100vh;
+  background-color: var(--adm-bg);
+  color: var(--adm-text);
+  font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+  text-align: left;
+  /* Scales fonts, spacing and icons down together. Raise toward 1 for bigger, lower for smaller. */
+  zoom: 0.8;
+}
+
+/* ---- Top nav ---- */
+.adm-topbar {
+  background: #fff;
+  border-bottom: none;
+  box-shadow: 0 2px 8px rgba(126, 61, 132, 0.05);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.adm-topbar-inner {
+  max-width: none;
+  margin: 0;
+  padding: 0 5rem;
+  height: 74px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.5rem;
+}
+
+.adm-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  font-weight: 700;
+  font-size: 1.1rem;
+  color: #2a1633;
+  text-decoration: none !important;
+  white-space: nowrap;
+}
+
+.adm-brand:hover {
+  color: #2a1633;
+}
+
+.adm-brand-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: #7e3d84;
+  color: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.95rem;
+}
+
+.adm-nav {
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+  overflow-x: auto;
+}
+
+.adm-nav a,
+.adm-nav button {
+  position: relative;
+  padding: 1.55rem 0;
+  color: #5a2a61;
+  font-weight: 500;
+  font-size: 0.97rem;
+  background: none;
+  border: none;
+  text-decoration: none !important;
+  white-space: nowrap;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.adm-nav a:hover,
+.adm-nav button:hover {
+  color: #2a1633;
+}
+
+.adm-nav a.active {
+  color: #2a1633;
+  font-weight: 600;
+}
+
+.adm-nav a.active::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 14px;
+  height: 2px;
+  border-radius: 2px;
+  background: #7e3d84;
+}
+
+.adm-nav .adm-logout {
+  color: #781528;
+}
+
+.adm-nav .adm-logout:hover {
+  color: #5c1020;
+}
+
+/* ---- Page container ---- */
+.adm-container {
+  max-width: none;
+  margin: 0;
+  padding: 2.5rem 5rem 4rem;
+}
+
+.adm-page-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 2rem;
+  flex-wrap: wrap;
+}
+
+.adm-page-head h1 {
+  font-size: 2.1rem;
+  font-weight: 800;
+  margin: 0 0 0.25rem;
+  color: var(--adm-text);
+}
+
+.adm-page-head p {
+  margin: 0;
+  color: var(--adm-muted);
+}
+
+.adm-page-head p b {
+  color: var(--adm-accent);
+}
+
+/* ---- Buttons ---- */
+.adm-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.65rem 1.15rem;
+  border-radius: 10px;
+  border: 1px solid var(--adm-border);
+  background: #fff;
+  color: var(--adm-text);
+  font-weight: 500;
+  font-size: 0.95rem;
+  text-decoration: none !important;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.adm-btn:hover {
+  background: #f9f4fc;
+  color: var(--adm-text);
+}
+
+.adm-btn-primary {
+  background: var(--adm-accent);
+  border-color: var(--adm-accent);
+  color: #fff;
+  font-weight: 600;
+}
+
+.adm-btn-primary:hover {
+  background: var(--adm-accent-hover);
+  border-color: var(--adm-accent-hover);
+  color: #fff;
+}
+
+/* ---- Stat cards ---- */
+.adm-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1.1rem;
+  margin-bottom: 1.75rem;
+}
+
+.adm-stat {
+  background: var(--adm-card);
+  border: 1px solid var(--adm-border);
+  border-radius: 18px;
+  padding: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 1.1rem;
+  text-decoration: none !important;
+  color: inherit;
+}
+
+a.adm-stat:hover {
+  border-color: #cfb6dd;
+  color: inherit;
+}
+
+.adm-stat-icon {
+  width: 50px;
+  height: 50px;
+  border-radius: 14px;
+  background: var(--adm-accent-soft);
+  color: var(--adm-accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.15rem;
+  flex-shrink: 0;
+}
+
+.adm-stat-value {
+  font-size: 1.9rem;
+  font-weight: 800;
+  line-height: 1.1;
+  color: var(--adm-accent);
+}
+
+.adm-stat-warn {
+  background: #fff3d1;
+  border-color: #f3b35f;
+}
+
+.adm-stat-warn .adm-stat-icon {
+  background: #fde7a8;
+  color: #8a5a00;
+}
+
+.adm-stat-warn .adm-stat-value {
+  color: #8a5a00;
+}
+
+.adm-stat-warn .adm-stat-label {
+  color: #8a6a2a;
+}
+
+.adm-stat-label {
+  color: var(--adm-muted);
+  font-size: 0.95rem;
+  margin-top: 0.15rem;
+}
+
+/* ---- Cards ---- */
+.adm-card {
+  background: var(--adm-card);
+  border: 1px solid var(--adm-border);
+  border-radius: 18px;
+  overflow: hidden;
+  margin-bottom: 1.75rem;
+}
+
+.adm-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+  padding: 1.75rem 2rem 1.25rem;
+}
+
+.adm-card-head h2 {
+  display: none; /* hides the "All products" / "All users" card titles */
+  font-size: 1.15rem;
+  font-weight: 700;
+  margin: 0;
+}
+
+.adm-card-body {
+  padding: 0 2rem 2rem;
+}
+
+.adm-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+/* Search and filters sit together on the left; action buttons (e.g. + Add product) go to the right */
+.adm-card-head .adm-toolbar {
+  flex: 1;
+}
+
+.adm-card-head .adm-search {
+  order: -1;
+}
+
+/* Match the filter dropdowns' height so the Add button lines up with them */
+.adm-card-head .adm-btn {
+  box-sizing: border-box;
+  height: 44px;
+  padding: 0 1.15rem;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+/* Works whether the button is inside the toolbar or in its own container */
+.adm-head-actions,
+.adm-card-head .adm-toolbar > .adm-btn {
+  margin-left: auto;
+}
+
+.adm-select,
+.adm-input {
+  height: 44px;
+  border: 1px solid var(--adm-border);
+  border-radius: 10px;
+  background: #f9f4fc;
+  padding: 0 0.9rem;
+  color: var(--adm-text);
+  font-size: 0.95rem;
+  font-family: inherit;
+}
+
+.adm-select:focus,
+.adm-input:focus {
+  outline: none;
+  border-color: var(--adm-accent);
+  background: #fff;
+}
+
+.adm-search {
+  position: relative;
+}
+
+.adm-search i {
+  position: absolute;
+  left: 0.9rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--adm-muted);
+  font-size: 0.85rem;
+}
+
+.adm-search .adm-input {
+  padding-left: 2.3rem;
+  width: 250px;
+}
+
+/* ---- Table ---- */
+.adm-table-wrap {
+  overflow-x: auto;
+}
+
+.adm-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 760px;
+}
+
+.adm-table th {
+  text-align: left;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--adm-muted);
+  padding: 1rem 1rem;
+  border-top: 1px solid var(--adm-border);
+  border-bottom: 1px solid var(--adm-border);
+  white-space: nowrap;
+}
+
+.adm-table th:first-child,
+.adm-table td:first-child {
+  padding-left: 2rem;
+}
+
+/* Same breathing room on the right edge as on the left, so the edit/delete buttons don't hug the card border */
+.adm-table th:last-child,
+.adm-table td:last-child {
+  padding-right: 2rem;
+}
+
+.adm-table th.sortable {
+  cursor: pointer;
+  user-select: none;
+}
+
+.adm-table th .sort-icon {
+  margin-left: 0.5rem;
+  opacity: 0.35;
+  font-size: 0.7rem;
+}
+
+.adm-table th.sorted .sort-icon {
+  opacity: 1;
+  color: var(--adm-accent);
+}
+
+.adm-table td {
+  padding: 1.1rem 1rem;
+  border-bottom: 1px solid var(--adm-border);
+  vertical-align: middle;
+  font-size: 0.95rem;
+}
+
+.adm-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.adm-table tbody tr:hover {
+  background: #faf6fd;
+}
+
+.adm-strong {
+  font-weight: 700;
+}
+
+.adm-price {
+  font-weight: 700;
+  color: var(--adm-accent);
+}
+
+.adm-muted {
+  color: var(--adm-muted);
+}
+
+.adm-truncate {
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--adm-muted);
+}
+
+.adm-mono {
+  font-family: ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace;
+  font-size: 0.85rem;
+}
+
+.adm-empty {
+  text-align: center;
+  color: var(--adm-muted);
+  padding: 3rem 1rem !important;
+}
+
+/* ---- Pills ---- */
+.adm-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.3rem 0.75rem;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.adm-pill.green { background: #e3f5ec; color: #1b7a4b; }
+.adm-pill.amber { background: #fdf0d9; color: #98620a; }
+.adm-pill.red   { background: #fbe4e4; color: #b3262e; }
+.adm-pill.blue  { background: #e4eefb; color: #1f5fae; }
+.adm-pill.tag   { background: #ecdcf3; color: #5a2a61; border-radius: 8px; }
+.adm-pill.maroon { background: var(--adm-accent-soft); color: var(--adm-accent); }
+
+.adm-pill.dot::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+/* ---- Image stack / avatar ---- */
+.adm-imgs {
+  display: flex;
+  align-items: center;
+}
+
+.adm-imgs img,
+.adm-imgs .more {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid #fff;
+  box-shadow: 0 0 0 1px var(--adm-border);
+  background: #fff;
+}
+
+.adm-imgs > * + * {
+  margin-left: -12px;
+}
+
+.adm-imgs .more {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: 600;
+  background: var(--adm-accent-soft);
+  color: var(--adm-accent);
+}
+
+.adm-user {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.adm-user img,
+.adm-user .initial {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.adm-user .initial {
+  background: var(--adm-accent-soft);
+  color: var(--adm-accent);
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ---- Row actions ---- */
+/* Column widths follow what each column needs: the table fills the card and spare space is shared
+   out by content, while Images and Category get extra room and the Actions column stays compact. */
+.adm-table td:has(.adm-imgs) {
+  min-width: 11rem;
+}
+
+.adm-table td:has(.adm-pill.tag) {
+  min-width: 11rem;
+}
+
+.adm-table th:last-child,
+.adm-table td:last-child {
+  width: 1%;
+  white-space: nowrap;
+  padding-right: 3rem;
+}
+
+.adm-actions {
+  display: flex;
+  gap: 1.25rem;
+  justify-content: flex-end;
+  /* Nudges the buttons away from the card edge without taking width from the other columns */
+  position: relative;
+  right: 2rem;
+}
+
+.adm-icon-btn {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  border: 1px solid var(--adm-border);
+  background: #fff;
+  color: var(--adm-text);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  text-decoration: none !important;
+  font-size: 0.9rem;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.adm-icon-btn:hover {
+  background: var(--adm-accent-soft);
+  color: var(--adm-accent);
+  border-color: var(--adm-accent-soft);
+}
+
+.adm-icon-btn.danger {
+  color: #9b84aa;
+}
+
+.adm-icon-btn.danger:hover {
+  background: #fbe4e4;
+  color: #b3262e;
+  border-color: #fbe4e4;
+}
+
+/* ---- Table footer ---- */
+.adm-table-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  padding: 1.1rem 2rem;
+  border-top: 1px solid var(--adm-border);
+  background: #f9f4fc;
+  color: var(--adm-muted);
+  font-size: 0.93rem;
+}
+
+.adm-table-foot .adm-select {
+  height: 36px;
+  margin: 0 0.4rem;
+  background: #fff;
+}
+
+.adm-pager {
+  display: flex;
+  gap: 0.4rem;
+  align-items: center;
+}
+
+.adm-pager button {
+  min-width: 38px;
+  height: 38px;
+  padding: 0 0.9rem;
+  border-radius: 10px;
+  border: 1px solid var(--adm-border);
+  background: #fff;
+  color: var(--adm-text);
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 0.93rem;
+}
+
+.adm-pager button:disabled {
+  color: #cdbbd8;
+  cursor: not-allowed;
+}
+
+.adm-pager button.current {
+  background: var(--adm-accent);
+  border-color: var(--adm-accent);
+  color: #fff;
+  font-weight: 600;
+}
+
+/* ---- Charts ---- */
+.adm-charts {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1.1rem;
+}
+
+.adm-charts .adm-card-body {
+  padding-top: 0;
+}
+
+.adm-chart-wide {
+  grid-column: 1 / -1;
+}
+
+/* ---- Forms & detail pages (existing markup, restyled) ---- */
+.admin-page .wrapper {
+  display: block;
+  margin-top: 0;
+  font-weight: 400;
+}
+
+.admin-page .wrapper form {
+  background: #fff;
+  border: 1px solid var(--adm-border);
+  border-radius: 18px;
+  box-shadow: none !important;
+  padding: 2rem;
+  max-width: 720px;
+  width: 100%;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* Product forms: compact 3-column layout so every field fits on one screen without scrolling
+   Row 1: Name | Category | Seller    Row 2: Price | Cost price | Stock    Row 3: Description (full)
+   Row 4: Images on its own full-width row (it grows with previews)  Then the button */
+.admin-page .wrapper:has(#price_field) {
+  margin-top: 0.5rem !important;
+  margin-bottom: 1rem !important;
+}
+
+.admin-page .wrapper form:has(#price_field) {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  column-gap: 1.25rem;
+  max-width: 1000px;
+  padding: 1.5rem 2rem;
+}
+
+.admin-page .wrapper form:has(#price_field) > * {
+  grid-column: 1 / -1;
+}
+
+.admin-page .wrapper form:has(#price_field) .form-group {
+  margin-bottom: 1rem;
+}
+
+.admin-page .wrapper form:has(#price_field) > .form-group:has(#name_field)       { grid-column: 1; grid-row: 2; }
+.admin-page .wrapper form:has(#price_field) > .form-group:has(#category_field)   { grid-column: 2; grid-row: 2; }
+.admin-page .wrapper form:has(#price_field) > .form-group:has(#seller_field)     { grid-column: 3; grid-row: 2; }
+.admin-page .wrapper form:has(#price_field) > .form-group:has(#price_field)      { grid-column: 1; grid-row: 3; }
+.admin-page .wrapper form:has(#price_field) > .form-group:has(#cost_price_field) { grid-column: 2; grid-row: 3; }
+.admin-page .wrapper form:has(#price_field) > .form-group:has(#stock_field)      { grid-column: 3; grid-row: 3; }
+.admin-page .wrapper form:has(#price_field) > .form-group:has(#description_field) { grid-row: 4; }
+.admin-page .wrapper form:has(#price_field) > .form-group:has(#customFile)       { grid-row: 5; }
+
+/* Heading inside the card + Cancel / Create row */
+.admin-page .wrapper form:has(#price_field) > .adm-form-head {
+  grid-row: 1;
+  margin-bottom: 1.25rem;
+}
+
+.adm-form-head h2 {
+  font-size: 1.6rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--adm-text);
+  margin: 0;
+}
+
+.adm-form-head p {
+  color: var(--adm-muted);
+  margin: 0.2rem 0 0;
+  font-size: 0.95rem;
+}
+
+.adm-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 0.5rem;
+}
+
+.adm-form-actions #login_button,
+.adm-form-actions .adm-cancel {
+  flex: 0 0 160px;
+  width: 160px;
+  height: 48px;
+  margin: 0;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  font-weight: 600;
+}
+
+.admin-page .wrapper form .adm-form-actions .btn {
+  margin: 0;
+}
+
+.admin-page .wrapper form .adm-form-actions .adm-cancel {
+  background-color: #e5e7eb;
+  border: 1px solid #d1d5db;
+  color: #374151;
+}
+
+.admin-page .wrapper form .adm-form-actions .adm-cancel:hover {
+  background-color: #d1d5db;
+  border-color: #c4c8ce;
+  color: #1f2937;
+}
+
+.admin-page .wrapper form:has(#price_field) #description_field {
+  height: 6.5rem;
+  min-height: 0;
+  resize: vertical;
+}
+
+@media (max-width: 900px) {
+  .admin-page .wrapper form:has(#price_field) {
+    display: block;
+  }
+}
+
+.admin-page .wrapper form > h1 {
+  display: none;
+}
+
+.admin-page .wrapper form label {
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: var(--adm-text);
+}
+
+.admin-page .form-control {
+  border: 1px solid var(--adm-border);
+  border-radius: 10px;
+  background: #f9f4fc;
+  min-height: 44px;
+}
+
+.admin-page .form-control:focus {
+  border-color: var(--adm-accent);
+  background: #fff;
+  box-shadow: none;
+}
+
+.admin-page .wrapper form .btn,
+.admin-page .update-btn,
+.admin-page .btn-primary {
+  background-color: var(--adm-accent);
+  border-color: var(--adm-accent);
+  color: #fff;
+  border-radius: 10px;
+  font-weight: 600;
+}
+
+.admin-page .wrapper form .btn:hover,
+.admin-page .update-btn:hover,
+.admin-page .btn-primary:hover {
+  background-color: var(--adm-accent-hover);
+  border-color: var(--adm-accent-hover);
+  color: #fff;
+}
+
+.admin-page .row.wrapper {
+  margin: 0;
+}
+
+.admin-page .row.wrapper > [class*='col-'] {
+  padding: 0;
+  max-width: 720px;
+  flex: 0 0 100%;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.admin-page .order-details {
+  background: #fff;
+  border: 1px solid var(--adm-border);
+  border-radius: 18px;
+  padding: 1.5rem 2rem;
+}
+
+.admin-page .order-details h2 {
+  margin-top: 0 !important;
+  font-size: 1.3rem;
+  word-break: break-all;
+}
+
+.admin-page .order-details h4 {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--adm-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.admin-page .order-details p {
+  margin-left: 0;
+}
+
+.admin-page .order-details a {
+  color: var(--adm-accent);
+}
+
+.admin-page .order-details hr {
+  border-color: var(--adm-border);
+}
+
+/* ---- Responsive ---- */
+@media (max-width: 1200px) {
+  .adm-topbar-inner {
+    padding: 0 2.5rem;
+  }
+
+  .adm-container {
+    padding-left: 2.5rem;
+    padding-right: 2.5rem;
+  }
+}
+
+@media (max-width: 991px) {
+  .adm-stats {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .adm-charts {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .adm-topbar-inner {
+    padding: 0 1rem;
+    height: auto;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0;
+    padding-top: 0.75rem;
+  }
+
+  .adm-nav {
+    width: 100%;
+    gap: 1.4rem;
+  }
+
+  .adm-nav a,
+  .adm-nav button {
+    padding: 0.9rem 0;
+  }
+
+  .adm-nav a.active::after {
+    bottom: 4px;
+  }
+
+  .adm-container {
+    padding: 1.5rem 1rem 3rem;
+  }
+
+  .adm-stats {
+    grid-template-columns: 1fr;
+  }
+
+  .adm-card-head,
+  .adm-table-foot {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+
+  .adm-card-body {
+    padding: 0 1rem 1.5rem;
+  }
+
+  .adm-search .adm-input {
+    width: 100%;
+  }
+
+  .adm-search {
+    flex: 1 1 100%;
+  }
+}
+
+/* ---- Add product dialog ---- */
+.adm-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  background: rgba(42, 22, 51, 0.45);
+  animation: adm-fade 0.15s ease-out;
+}
+
+.adm-modal {
+  width: 100%;
+  max-width: 640px;
+  max-height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+  border-radius: 18px;
+  box-shadow: 0 20px 50px rgba(42, 22, 51, 0.25);
+  overflow: hidden;
+  animation: adm-pop 0.18s ease-out;
+}
+
+.adm-modal form {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  max-height: 100%;
+}
+
+.adm-modal-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.5rem 2rem 1rem;
+}
+
+.adm-modal-head h2 {
+  margin: 0;
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: var(--adm-text);
+}
+
+.adm-modal-head p {
+  margin: 0.2rem 0 0;
+  color: var(--adm-muted);
+  font-size: 0.95rem;
+}
+
+.adm-modal-close {
+  width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: 10px;
+  background: var(--adm-accent-soft);
+  color: var(--adm-accent);
+  font-size: 1.5rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.adm-modal-close:hover {
+  background: #e0c8ec;
+}
+
+.adm-modal-body {
+  padding: 0.5rem 2rem 1rem;
+  overflow-y: auto;
+}
+
+.adm-form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem 1.25rem;
+}
+
+.adm-field.full {
+  grid-column: 1 / -1;
+}
+
+.adm-field label {
+  display: block;
+  margin-bottom: 0.35rem;
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: var(--adm-text);
+}
+
+.adm-field .form-control {
+  width: 100%;
+  border: 1px solid var(--adm-border);
+  border-radius: 10px;
+  background: #f9f4fc;
+  min-height: 44px;
+  padding: 0.5rem 0.9rem;
+  font-size: 0.95rem;
+  font-family: inherit;
+  color: var(--adm-text);
+}
+
+.adm-field .form-control:focus {
+  outline: none;
+  border-color: var(--adm-accent);
+  background: #fff;
+}
+
+.adm-field .adm-file {
+  padding: 0.45rem 0.6rem;
+}
+
+.adm-preview {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin-top: 0.75rem;
+}
+
+.adm-preview img {
+  width: 56px;
+  height: 56px;
+  object-fit: cover;
+  border-radius: 10px;
+  border: 1px solid var(--adm-border);
+}
+
+.adm-modal-foot {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  padding: 1rem 2rem 1.5rem;
+  border-top: 1px solid var(--adm-border);
+}
+
+.adm-modal-foot .adm-btn {
+  height: 44px;
+  padding: 0 1.4rem;
+}
+
+.adm-modal-foot .adm-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+@keyframes adm-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes adm-pop {
+  from { opacity: 0; transform: translateY(8px) scale(0.98); }
+  to { opacity: 1; transform: none; }
+}
+
+@media (max-width: 640px) {
+  .adm-form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .adm-modal-head,
+  .adm-modal-body,
+  .adm-modal-foot {
+    padding-left: 1.25rem;
+    padding-right: 1.25rem;
+  }
+}
+/* ---- Image previews with remove button ---- */
+.adm-img-previews {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 0.75rem;
+}
+
+.adm-img-preview {
+  position: relative;
+}
+
+.adm-img-preview img {
+  border-radius: 8px;
+  object-fit: cover;
+  border: 1px solid var(--adm-border);
+}
+
+.admin-page .wrapper form .adm-img-remove {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  width: 22px;
+  height: 22px;
+  margin: 0;
+  padding: 0;
+  border-radius: 50%;
+  border: none;
+  background: #b3262e;
+  color: #fff;
+  font-size: 14px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.admin-page .wrapper form .adm-img-remove:hover {
+  background: #8f1d24;
+}
+
+/* ---- Toast notifications (match the admin pills) ---- */
+.Toastify__toast-container {
+  font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+}
+
+body .Toastify__toast-container {
+  --toastify-toast-width: 280px;
+  --toastify-toast-min-height: 0px;
+  width: max-content !important;
+  min-width: 280px;
+  max-width: 90vw;
+}
+
+.Toastify__toast {
+  font-family: inherit;
+  font-size: 0.82rem !important;
+  font-weight: 500;
+  border-radius: 8px;
+  min-height: 0 !important;
+  padding: 0.3rem 0.6rem;
+  line-height: 1.35;
+  margin-bottom: 0.5rem;
+  box-shadow: 0 8px 24px rgba(42, 22, 51, 0.12);
+}
+
+.Toastify__toast--success {
+  --toastify-icon-color-success: #1b7a4b;
+  background: #e3f5ec;
+  color: #1b7a4b;
+  border: 1px solid #c3e6d3;
+}
+
+.Toastify__toast--success .Toastify__progress-bar { background: #1b7a4b; }
+
+.Toastify__toast--error {
+  --toastify-icon-color-error: #b3262e;
+  background: #fbe4e4;
+  color: #b3262e;
+  border: 1px solid #f3c6c8;
+}
+
+.Toastify__toast--error .Toastify__progress-bar { background: #b3262e; }
+
+.Toastify__toast--warning {
+  --toastify-icon-color-warning: #98620a;
+  background: #fdf0d9;
+  color: #98620a;
+  border: 1px solid #f3dcae;
+}
+
+.Toastify__toast--info {
+  --toastify-icon-color-info: #1f5fae;
+  background: #e4eefb;
+  color: #1f5fae;
+  border: 1px solid #c5d8f2;
+}
+
+.Toastify__toast-body {
+  font-family: inherit;
+  font-size: 0.82rem !important;
+  padding: 0.15rem 0.2rem;
+  margin: 0;
+  white-space: nowrap;
+}
+
+.Toastify__toast-icon {
+  width: 16px;
+  margin-inline-end: 8px;
+}
+
+.Toastify__toast-icon svg {
+  width: 16px;
+  height: 16px;
+}
+
+.Toastify__progress-bar { height: 3px; }
+
+.Toastify__close-button svg { width: 12px; height: 12px; }
+
+/* Line the toast's right edge up with the cards/tables.
+   .admin-page is zoomed to 0.8 but the toast is not, so the page's 5rem side padding
+   is about 4rem here, and the toast container adds roughly 0.5rem of its own offset. */
+@media (min-width: 992px) {
+  body.admin-mode .Toastify__toast-container--bottom-right {
+    right: 4rem;
+  }
+}
+
+@media (min-width: 992px) and (max-width: 1200px) {
+  body.admin-mode .Toastify__toast-container--bottom-right {
+    right: 2rem;
+  }
+}
+
+.Toastify__close-button { color: currentColor; opacity: 0.6; }
+.Toastify__close-button:hover { opacity: 1; }

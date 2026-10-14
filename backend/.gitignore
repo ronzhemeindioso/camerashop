@@ -1,0 +1,4 @@
+node_modules
+.env
+
+mongodb+srv://ronzhem23_db_user:oqqAU0KDVPoSbcDJ@commerce.cfejapo.mongodb.net/commerce?appName=commerce
