@@ -3,6 +3,15 @@ const crypto = require('crypto')
 const cloudinary = require('cloudinary')
 const sendEmail = require('../utils/sendEmail')
 const sendToken = require('../utils/jwtToken');
+   const { initializeApp, getApps, cert } = require('firebase-admin/app')
+   const { getAuth } = require('firebase-admin/auth')
+   const path = require('path')
+
+   if (!getApps().length) {
+       initializeApp({
+           credential: cert(require(path.join(__dirname, '../config/firebase-service-account.json'))),
+       })
+   }
 
 exports.registerUser = async (req, res, next) => {
     console.log(req.body)
@@ -60,6 +69,46 @@ exports.loginUser = async (req, res, next) => {
     } catch (err) {
         console.error('Login error:', err)
         return res.status(500).json({ message: 'Login failed: ' + err.message })
+    }
+}
+
+exports.socialLogin = async (req, res) => {
+    try {
+        const { idToken } = req.body || {}
+        if (!idToken) {
+            return res.status(400).json({ message: 'Missing login token' })
+        }
+
+        const decoded = await getAuth().verifyIdToken(idToken)
+        const { email, name, picture, uid } = decoded
+        if (!email) {
+            return res.status(400).json({ message: 'Your account has no email. Please use another login method.' })
+        }
+
+        let user = await User.findOne({ email })
+
+        if (user && user.deletedAt) {
+            return res.status(403).json({ message: 'This account has been deactivated' })
+        }
+
+        if (!user) {
+            user = await User.create({
+                name: (name || email.split('@')[0]).slice(0, 30),
+                email,
+                // the schema requires a password, so give social users a random one they never use
+                password: crypto.randomBytes(24).toString('hex'),
+                avatar: {
+                    public_id: `social_${uid}`,
+                    url: picture || 'https://res.cloudinary.com/demo/image/upload/avatar.png',
+                },
+            })
+        }
+
+        user.password = undefined
+        sendToken(user, 200, res)
+    } catch (err) {
+        console.error('Social login error:', err.message)
+        return res.status(401).json({ message: 'Social login failed' })
     }
 }
 
@@ -200,7 +249,9 @@ exports.updatePassword = async (req, res, next) => {
 }
 
 exports.allUsers = async (req, res, next) => {
-    const users = await User.find();
+    // ?deleted=true lists the trash, otherwise only active users
+    const filter = req.query.deleted === 'true' ? { deletedAt: { $ne: null } } : { deletedAt: null }
+    const users = await User.find(filter);
     res.status(200).json({
         success: true,
         users
@@ -215,10 +266,22 @@ exports.deleteUser = async (req, res, next) => {
         // return next(new ErrorHandler(`User does not found with id: ${req.params.id}`))
     }
 
-    // Remove avatar from cloudinary
-    const image_id = user.avatar.public_id;
-    await cloudinary.v2.uploader.destroy(image_id);
-    await User.findByIdAndDelete(req.params.id);
+    user.deletedAt = new Date()
+    await user.save({ validateBeforeSave: false })
+    return res.status(200).json({
+        success: true,
+    })
+}
+
+exports.restoreUser = async (req, res, next) => {
+    const user = await User.findById(req.params.id);
+
+    if (!user) {
+        return res.status(404).json({ message: `User does not found with id: ${req.params.id}` })
+    }
+
+    user.deletedAt = null
+    await user.save({ validateBeforeSave: false })
     return res.status(200).json({
         success: true,
     })

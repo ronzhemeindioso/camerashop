@@ -11,6 +11,7 @@ const UpdateUser = () => {
     const [name, setName] = useState('')
     const [email, setEmail] = useState('')
     const [role, setRole] = useState('')
+    const [password, setPassword] = useState('')
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState('')
     const [user, setUser] = useState(true)
@@ -72,45 +73,59 @@ const UpdateUser = () => {
         formData.set('name', name);
         formData.set('email', email);
         formData.set('role', role);
+        if (password) formData.set('password', password);
         updateUser(user._id, formData)
     }
+
+    const row = { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 1.25rem' }
 
     return (
         <>
             <MetaData title={`Update User`} />
-            <AdminLayout title="Edit user" subtitle="Change this user's name, email or role">
-                    <div className="row wrapper">
-                        <div className="col-10 col-lg-5">
-                            <form className="shadow-lg" onSubmit={submitHandler}>
-                                <h1 className="mt-2 mb-5">Update User</h1>
+            <AdminLayout>
+                <div className="wrapper my-5">
+                    <div>
+                        <form className="shadow-lg" onSubmit={submitHandler}>
+                            <div className="adm-form-head" style={{ marginBottom: '1.25rem' }}>
+                                <h2>Edit user</h2>
+                                <p>Change this user's name, email, role or password</p>
+                            </div>
+
+                            <div style={row}>
                                 <div className="form-group">
                                     <label htmlFor="name_field">Name</label>
                                     <input
-                                        type="name"
+                                        type="text"
                                         id="name_field"
                                         className="form-control"
-                                        name='name'
+                                        name="name"
                                         value={name}
                                         onChange={(e) => setName(e.target.value)}
+                                        required
                                     />
                                 </div>
+
                                 <div className="form-group">
                                     <label htmlFor="email_field">Email</label>
                                     <input
                                         type="email"
                                         id="email_field"
                                         className="form-control"
-                                        name='email'
+                                        name="email"
                                         value={email}
                                         onChange={(e) => setEmail(e.target.value)}
+                                        required
                                     />
                                 </div>
+                            </div>
+
+                            <div style={row}>
                                 <div className="form-group">
                                     <label htmlFor="role_field">Role</label>
                                     <select
                                         id="role_field"
                                         className="form-control"
-                                        name='role'
+                                        name="role"
                                         value={role}
                                         onChange={(e) => setRole(e.target.value)}
                                     >
@@ -118,11 +133,40 @@ const UpdateUser = () => {
                                         <option value="admin">admin</option>
                                     </select>
                                 </div>
-                                <button type="submit" className="btn update-btn btn-block mt-4 mb-3" >Update</button>
-                            </form>
-                        </div>
+
+                                <div className="form-group">
+                                    <label htmlFor="password_field">New password</label>
+                                    <input
+                                        type="password"
+                                        id="password_field"
+                                        className="form-control"
+                                        name="password"
+                                        value={password}
+                                        onChange={(e) => setPassword(e.target.value)}
+                                        placeholder="Leave blank to keep current"
+                                        minLength={6}
+                                        autoComplete="new-password"
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="adm-form-actions" style={{ marginTop: '2.5rem' }}>
+                                <button
+                                    type="button"
+                                    className="btn"
+                                    style={{ background: 'transparent', border: 'none', color: '#6b7280', width: 'auto', flex: '0 0 auto', padding: '0 0.5rem' }}
+                                    onClick={() => navigate('/admin/users')}
+                                >
+                                    Cancel
+                                </button>
+                                <button id="login_button" type="submit" className="btn">
+                                    UPDATE
+                                </button>
+                            </div>
+                        </form>
                     </div>
-                </AdminLayout>
+                </div>
+            </AdminLayout>
         </>
     )
 }

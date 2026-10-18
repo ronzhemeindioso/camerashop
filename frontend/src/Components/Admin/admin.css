@@ -668,8 +668,80 @@ a.adm-stat:hover {
   padding-top: 0;
 }
 
-.adm-chart-wide {
-  grid-column: 1 / -1;
+/* Monthly sales on the left (tall), the two other charts stacked on the right */
+.adm-charts .adm-chart-wide {
+  grid-column: 1;
+  grid-row: 1 / span 2;
+}
+
+.adm-charts .adm-card {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 0 !important; /* the grid gap alone spaces the cards */
+}
+
+/* every chart fills whatever space its card has */
+.adm-charts .adm-card-body {
+  flex: 1;
+  position: relative;
+  min-height: 260px;
+}
+
+.adm-charts .recharts-responsive-container {
+  position: absolute !important;
+  top: 0;
+  left: 1.5rem;
+  width: calc(100% - 3rem) !important;
+  height: calc(100% - 1rem) !important;
+}
+
+/* when the dashboard is fitted to the screen (set from Dashboard.jsx) */
+.adm-charts.fit {
+  grid-template-rows: repeat(2, minmax(0, 1fr));
+}
+
+.adm-charts.fit .adm-card-body {
+  min-height: 0;
+}
+
+/* ---- Compact dashboard so everything fits on one screen ---- */
+.adm-container:has(.adm-dash) {
+  padding-top: 1.5rem;
+  padding-bottom: 1.5rem;
+}
+
+.adm-container:has(.adm-dash) .adm-page-head {
+  margin-bottom: 1rem;
+}
+
+.adm-dash .adm-stats {
+  margin-bottom: 0.75rem;
+}
+
+.adm-dash .adm-stats,
+.adm-dash .adm-charts {
+  gap: 0.75rem;
+}
+
+.adm-dash .adm-stat {
+  padding: 1rem 1.25rem;
+}
+
+.adm-dash .adm-stat-icon {
+  width: 42px;
+  height: 42px;
+}
+
+.adm-dash .adm-stat-value {
+  font-size: 1.6rem;
+}
+
+.adm-dash .adm-card-head {
+  padding: 1rem 1.5rem 0.5rem;
+}
+
+.adm-dash .adm-card-body {
+  padding: 0 1.5rem 1rem;
 }
 
 /* ---- Forms & detail pages (existing markup, restyled) ---- */
@@ -899,6 +971,11 @@ a.adm-stat:hover {
 
   .adm-charts {
     grid-template-columns: 1fr;
+  }
+
+  .adm-charts .adm-chart-wide {
+    grid-column: 1;
+    grid-row: auto;
   }
 }
 

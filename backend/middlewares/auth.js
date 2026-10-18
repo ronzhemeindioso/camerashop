@@ -29,7 +29,7 @@ exports.isAuthenticatedUser = async (req, res, next) => {
     } catch (err) {
         return res.status(401).json({ message: 'Invalid or expired token, please login again' })
     }
-    if (!req.user) {
+    if (!req.user || req.user.deletedAt) {
         return res.status(401).json({ message: 'User not found, please login again' })
     }
 

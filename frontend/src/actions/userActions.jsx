@@ -19,6 +19,8 @@ import {
     FORGOT_PASSWORD_FAIL,
     CLEAR_ERRORS
 } from '../constants/userConstants'
+import { signInWithPopup } from 'firebase/auth'
+import { auth } from '../firebase'
 
 const API = import.meta.env.VITE_API
 const TOKEN_KEY = 'authToken'
@@ -73,6 +75,29 @@ export const login = (email, password) => async (dispatch) => {
             type: LOGIN_FAIL,
             payload: errorMessage(error)
         })
+    }
+}
+
+export const socialLogin = (provider) => async (dispatch) => {
+    try {
+        dispatch({ type: LOGIN_REQUEST })
+        const result = await signInWithPopup(auth, provider)
+        const idToken = await result.user.getIdToken()
+
+        const { data } = await axios.post(
+            `${API}/social-login`,
+            { idToken },
+            { headers: { 'Content-Type': 'application/json' }, withCredentials: true }
+        )
+        setAuthToken(data.token)
+        dispatch({ type: LOGIN_SUCCESS, payload: data.user })
+    } catch (error) {
+        // closing the popup is not worth an error message
+        if (error.code === 'auth/popup-closed-by-user' || error.code === 'auth/cancelled-popup-request') {
+            dispatch({ type: CLEAR_ERRORS })
+            return
+        }
+        dispatch({ type: LOGIN_FAIL, payload: errorMessage(error) })
     }
 }
 

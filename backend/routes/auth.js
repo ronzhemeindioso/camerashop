@@ -16,12 +16,15 @@ const {
     updateUser,
     logout,
     createUser,
+    restoreUser,
+    socialLogin,
 } = require('../controllers/auth');
 const { isAuthenticatedUser, authorizeRoles } = require('../middlewares/auth')
 
 
 router.post('/register', upload.single("avatar"), registerUser);
 router.post('/login', loginUser);
+router.post('/social-login', socialLogin);
 router.post('/password/forgot', forgotPassword);
 router.put('/password/reset/:token', resetPassword);
 router.get('/me', isAuthenticatedUser, getUserProfile)
@@ -31,5 +34,6 @@ router.get('/admin/users', isAuthenticatedUser, authorizeRoles('admin'), allUser
 
 router.route('/admin/user/:id').get(isAuthenticatedUser, authorizeRoles('admin'), getUserDetails).delete(isAuthenticatedUser, authorizeRoles('admin'), deleteUser).put(isAuthenticatedUser, authorizeRoles('admin'), updateUser)
 router.post('/admin/user/new', isAuthenticatedUser, authorizeRoles('admin'), createUser)
+router.put('/admin/user/:id/restore', isAuthenticatedUser, authorizeRoles('admin'), restoreUser)
 router.get('/logout', logout);
 module.exports = router;

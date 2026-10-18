@@ -42,7 +42,7 @@ const UserSalesChart = () => {
     }, [])
 
     return (
-        <ResponsiveContainer width="100%" height={340}>
+        <ResponsiveContainer width="100%" height="100%">
             {loading ? <Loader /> : (<BarChart
                 data={sales}
             >

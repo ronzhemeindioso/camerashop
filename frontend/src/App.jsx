@@ -41,6 +41,7 @@ import ProductReviews from './Components/Admin/ProductReviews';
 import UpdateProduct from './Components/Admin/UpdateProduct';
 import HomePage from './Components/HomePage'
 import TrashProducts from './Components/Admin/TrashProducts'
+import TrashUsers from './Components/Admin/TrashUsers'
 import NewUser from './Components/Admin/NewUser'
 function App() {
   const dispatch = useDispatch()
@@ -185,6 +186,15 @@ function App() {
             element={
               <ProtectedRoute isAdmin={true}>
                 <ProductsList />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/admin/users/trash"
+            element={
+              <ProtectedRoute isAdmin={true}>
+                <TrashUsers />
               </ProtectedRoute>
             }
           />

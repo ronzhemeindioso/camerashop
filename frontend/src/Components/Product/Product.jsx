@@ -6,16 +6,14 @@ const Product = ({ product }) => {
     const soldOut = product.stock === 0
 
     return (
-        <article className="product-card">
-            <Link to={`/product/${product._id}`} className="product-card-media" aria-label={product.name}>
+        <Link to={`/product/${product._id}`} className="product-card">
+            <div className="product-card-media">
                 {image && <img src={image} alt={product.name} />}
                 {soldOut && <span className="product-badge">Sold out</span>}
-            </Link>
+            </div>
 
             <div className="product-card-body">
-                <h3 className="product-card-title">
-                    <Link to={`/product/${product._id}`}>{product.name}</Link>
-                </h3>
+                <h3 className="product-card-title">{product.name}</h3>
 
                 <div className="ratings">
                     <div className="rating-outer">
@@ -25,10 +23,8 @@ const Product = ({ product }) => {
                 </div>
 
                 <p className="product-card-price">${product.price}</p>
-
-                <Link to={`/product/${product._id}`} className="product-card-btn">View details</Link>
             </div>
-        </article>
+        </Link>
     )
 }
 

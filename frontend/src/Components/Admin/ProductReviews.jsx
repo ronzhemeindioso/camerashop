@@ -7,16 +7,13 @@ import AdminLayout from './AdminLayout'
 import DataTable from './DataTable'
 // import Toast from '../Layout/Toast'
 import Swal from 'sweetalert2'
-import { getUser, getToken, errMsg } from '../../Utils/helpers'
+import { getToken, errMsg, successMsg } from '../../Utils/helpers'
 import axios from 'axios'
 
 const ProductReviews = () => {
     const [productId, setProductId] = useState('')
-    const [error, setError] = useState('')
     const [listReviews, setListReviews] = useState([])
-    const [deleteError, setDeleteError] = useState('')
-    const [isDeleted, setIsDeleted] = useState(false)
-    const [user, setUser] = useState(getUser())
+    const [refreshKey, setRefreshKey] = useState(0)
 
     const config = {
         headers: {
@@ -27,21 +24,22 @@ const ProductReviews = () => {
 
     const getProductReviews = async (id) => {
         try {
-
             const { data } = await axios.get(`${import.meta.env.VITE_API}/reviews?id=${id}`, config)
             setListReviews(data.reviews)
-
         } catch (error) {
-            setError(error.response.data.message)
+            setListReviews([])
         }
     }
+
     const deleteReview = async (id, productId) => {
         try {
             const { data } = await axios.delete(`${import.meta.env.VITE_API}/reviews?id=${id}&productId=${productId}`, config)
-            setIsDeleted(data.success)
-
+            if (data.success) {
+                successMsg('Review deleted successfully')
+                setRefreshKey((k) => k + 1)
+            }
         } catch (error) {
-            setDeleteError(error.response.data.message);
+            errMsg(error.response?.data?.message || error.message)
         }
     }
 
@@ -54,33 +52,22 @@ const ProductReviews = () => {
             showCancelButton: true
         }).then((result) => {
             if (result.isConfirmed) {
-                deleteReview(id, productId)
+                deleteReview(id, productId.trim())
             }
         })
-
     }
+
+    // Search automatically: once the box holds a complete product ID (24 hex characters),
+    // look it up after a short pause. Anything else just clears the list.
     useEffect(() => {
-        if (error) {
-            setError('')
+        const id = productId.trim()
+        if (!/^[a-f\d]{24}$/i.test(id)) {
+            setListReviews([])
+            return
         }
-
-        if (deleteError) {
-            setDeleteError('')
-        }
-        if (productId !== '') {
-            getProductReviews(productId)
-        }
-
-        if (isDeleted) {
-            errMsg('Review deleted successfully', 'success');
-            setIsDeleted(false)
-        }
-    }, [error, productId, isDeleted, deleteError])
-
-    const submitHandler = (e) => {
-        e.preventDefault();
-        getProductReviews(productId)
-    }
+        const timer = setTimeout(() => getProductReviews(id), 300)
+        return () => clearTimeout(timer)
+    }, [productId, refreshKey])
 
     const columns = [
         {
@@ -112,18 +99,17 @@ const ProductReviews = () => {
                 <div className="adm-card">
                     <div className="adm-card-head">
                         <h2>Find reviews</h2>
-                        <form className="adm-toolbar" onSubmit={submitHandler}>
+                        <div className="adm-toolbar">
                             <input
                                 type="text"
                                 id="productId_field"
                                 className="adm-input"
                                 style={{ width: 320 }}
-                                placeholder="Enter product ID"
+                                placeholder="Paste a product ID to load its reviews"
                                 value={productId}
                                 onChange={(e) => setProductId(e.target.value)}
                             />
-                            <button id="search_button" type="submit" className="adm-btn adm-btn-primary">Search</button>
-                        </form>
+                        </div>
                     </div>
                 </div>
 

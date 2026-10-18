@@ -66,7 +66,7 @@ export default function ProductSalesChart() {
 
 
     return (
-        <ResponsiveContainer width="100%" height={340}>
+        <ResponsiveContainer width="100%" height="100%">
             <PieChart>
                 {/* <Pie data={data} dataKey="percent" nameKey="name" cx="50%" cy="50%" outerRadius={50} fill="#7e3d84" /> */}
                 <Pie
@@ -76,7 +76,7 @@ export default function ProductSalesChart() {
                     data={sales}
                     cx="50%"
                     cy="50%"
-                    outerRadius={110}
+                    outerRadius="75%"
                     fill="#7e3d84"
                     label={renderCustomizedLabel}
                     labelLine={false}

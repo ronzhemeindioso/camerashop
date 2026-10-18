@@ -38,7 +38,8 @@ const UsersList = () => {
         }
     }
 
-    const deleteUser = async (id) => {
+    const deleteUser = async (id, name) => {
+        if (!window.confirm(`Move "${name}" to trash? You can restore them later.`)) return
         try {
             setDeletedId(id)
             const { data } = await axios.delete(`${import.meta.env.VITE_API}/admin/user/${id}`, config)
@@ -61,7 +62,7 @@ const UsersList = () => {
 
     useEffect(() => {
         if (isDeleted) {
-            successMsg('User deleted successfully');
+            successMsg('User moved to trash');
             setAllUsers(prev => prev.filter(u => u._id !== deletedId))
             setIsDeleted('')
         }
@@ -96,7 +97,7 @@ const UsersList = () => {
                     <Link to={`/admin/user/${u._id}`} className="adm-icon-btn" title="Edit">
                         <i className="fa fa-pencil"></i>
                     </Link>
-                    <button className="adm-icon-btn danger" title="Delete" onClick={() => deleteUser(u._id)}>
+                    <button className="adm-icon-btn danger" title="Move to trash" onClick={() => deleteUser(u._id, u.name)}>
                         <i className="fa fa-trash"></i>
                     </button>
                 </div>
@@ -107,7 +108,11 @@ const UsersList = () => {
     return (
         <>
             <MetaData title={'All Users'} />
-            <AdminLayout title="Users" subtitle={<><b>{allUsers.length}</b> total, proceed to manage them</>}>
+            <AdminLayout
+                title="Users"
+                subtitle={<><b>{allUsers.length}</b> total, proceed to manage them</>}
+                actions={<Link to="/admin/users/trash" className="adm-btn">View deleted</Link>}
+            >
                 {loading ? <Loader /> : (
                     <>
                         <div className="adm-stats">

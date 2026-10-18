@@ -8,8 +8,9 @@ import 'react-toastify/dist/ReactToastify.css';
 import axios from 'axios';
 // import { getUser, authenticate } from '../../Utils/helpers';
 import { useDispatch, useSelector } from 'react-redux'
-import { login, clearErrors } from '../../actions/userActions'
 import './Login.css'
+import { login, socialLogin, clearErrors } from '../../actions/userActions'
+import { googleProvider, facebookProvider } from '../../firebase'
 
 const Login = () => {
     const { isAuthenticated, error, loading, user } = useSelector(state => state.auth)
@@ -141,6 +142,17 @@ const Login = () => {
                                     <button id="login_button" type="submit" className="login-submit">
                                         SIGN IN
                                     </button>
+
+                                    <div style={{ display: 'flex', gap: '10px', marginTop: '12px' }}>
+                                        <button type="button" className="login-submit"
+                                            onClick={() => dispatch(socialLogin(googleProvider))}>
+                                            Continue with Google
+                                        </button>
+                                        <button type="button" className="login-submit"
+                                            onClick={() => dispatch(socialLogin(facebookProvider))}>
+                                            Continue with Facebook
+                                        </button>
+                                    </div>
 
                                     <p className="login-mobile-signup">
                                         New user? <Link to="/register">Create an account</Link>
