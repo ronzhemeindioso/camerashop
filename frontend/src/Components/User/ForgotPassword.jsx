@@ -1,44 +1,16 @@
-import React, { useState, } from 'react'
+import React, { useState, useEffect } from 'react'
+import { Link } from 'react-router-dom'
 
 import MetaData from '../Layout/MetaData'
-import axios from 'axios'
-import { toast } from 'react-toastify';
-
 import 'react-toastify/dist/ReactToastify.css';
-import { useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from 'react-redux'
 import { forgotPassword } from '../../actions/userActions';
-
-
+import './Login.css'
 
 const ForgotPassword = () => {
     const dispatch = useDispatch();
-    const { error, loading, message } = useSelector(state => state.forgotPassword)
+    const { loading } = useSelector(state => state.forgotPassword)
     const [email, setEmail] = useState('')
-    // const [loading, setLoading] = useState('')
-    // const navigate = useNavigate()
-    // const forgotPassword = async (formData) => {
-    //     const config = {
-    //         headers: {
-    //             'Content-Type': 'application/json'
-    //         }
-    //     }
-    //     try {
-    //         const { data } = await axios.post(`http://localhost:4001/api/v1/password/forgot`, formData, config)
-    //         console.log(data.message)
-
-    //         setLoading(false)
-    //         toast.success(data.message, {
-    //             position: 'bottom-center'
-    //         });
-    //         navigate('/login')
-    //     } catch (error) {
-    //         toast.error(error.response.data.message, {
-    //             position: 'top-right'
-    //         });
-    //     }
-    // }
-
 
     const submitHandler = (e) => {
         e.preventDefault();
@@ -47,38 +19,53 @@ const ForgotPassword = () => {
         dispatch(forgotPassword(formData))
     }
 
-
+    // Minimal layout: hides banner, footer and the whole top menu (see Login.css)
+    useEffect(() => {
+        document.body.classList.add('login-mode', 'forgot-mode')
+        return () => document.body.classList.remove('login-mode', 'forgot-mode')
+    }, [])
 
     return (
         <>
             <MetaData title={'Forgot Password'} />
-            <div className="row wrapper">
-                <div className="col-10 col-lg-5">
-                    <form className="shadow-lg" onSubmit={submitHandler}>
-                        <h1 className="mb-3">Forgot Password</h1>
-                        <div className="form-group">
-                            <label htmlFor="email_field">Enter Email</label>
-                            <input
-                                type="email"
-                                id="email_field"
-                                className="form-control"
-                                value={email}
-                                onChange={(e) => setEmail(e.target.value)}
-                            />
-                        </div>
 
-                        <button
-                            id="forgot_password_button"
-                            type="submit"
-                            className="btn btn-block py-3"
-                            disabled={loading ? true : false} >
-                            Send Email
-                        </button>
+            <div className="login-page">
+                <div className="login-card login-card-single">
+                    <section className="login-form-wrap">
+                        <form onSubmit={submitHandler} className="login-form">
+                            <h1>FORGOT PASSWORD</h1>
+                            <p className="login-hint">
+                                Enter your email and we'll send you a link to reset your password.
+                            </p>
 
-                    </form>
+                            <div className="login-field">
+                                <label htmlFor="email_field">Email</label>
+                                <i className="fa fa-envelope-o" aria-hidden="true"></i>
+                                <input
+                                    type="email"
+                                    id="email_field"
+                                    value={email}
+                                    onChange={(e) => setEmail(e.target.value)}
+                                    autoComplete="email"
+                                    required
+                                />
+                            </div>
+
+                            <button
+                                id="forgot_password_button"
+                                type="submit"
+                                className="login-submit"
+                                disabled={loading ? true : false}>
+                                {loading ? 'SENDING...' : 'SEND EMAIL'}
+                            </button>
+
+                            <p className="login-back">
+                                <Link to="/login">&larr; Back to sign in</Link>
+                            </p>
+                        </form>
+                    </section>
                 </div>
             </div>
-
         </>
     )
 }

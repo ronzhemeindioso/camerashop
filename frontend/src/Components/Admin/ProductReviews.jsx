@@ -14,6 +14,7 @@ const ProductReviews = () => {
     const [productId, setProductId] = useState('')
     const [listReviews, setListReviews] = useState([])
     const [refreshKey, setRefreshKey] = useState(0)
+    const [products, setProducts] = useState([])
 
     const config = {
         headers: {
@@ -57,6 +58,19 @@ const ProductReviews = () => {
         })
     }
 
+    // product list for the dropdown (reloaded after a delete so the review counts stay right)
+    useEffect(() => {
+        const loadProducts = async () => {
+            try {
+                const { data } = await axios.get(`${import.meta.env.VITE_API}/admin/products`, config)
+                setProducts(data.products || [])
+            } catch (error) {
+                setProducts([])
+            }
+        }
+        loadProducts()
+    }, [refreshKey])
+
     // Search automatically: once the box holds a complete product ID (24 hex characters),
     // look it up after a short pause. Anything else just clears the list.
     useEffect(() => {
@@ -79,7 +93,7 @@ const ProductReviews = () => {
             render: (r) => <span className="adm-pill amber">{r.rating} <i className="fa fa-star"></i></span>
         },
         { key: 'comment', label: 'Comment', render: (r) => <div className="adm-truncate" style={{ maxWidth: 360 }}>{r.comment}</div> },
-        { key: 'user', label: 'User', sortable: true, render: (r) => <span className="adm-strong">{r.user}</span> },
+        { key: 'name', label: 'User', sortable: true, render: (r) => <span className="adm-strong">{r.name}</span> },
         {
             key: 'actions', label: '',
             render: (r) => (
@@ -95,20 +109,25 @@ const ProductReviews = () => {
     return (
         <>
             <MetaData title={'Product Reviews'} />
-            <AdminLayout title="Reviews" subtitle="Look up a product by its ID to manage its reviews">
+            <AdminLayout title="Reviews" subtitle="Choose a product to manage its reviews">
                 <div className="adm-card">
                     <div className="adm-card-head">
                         <h2>Find reviews</h2>
                         <div className="adm-toolbar">
-                            <input
-                                type="text"
+                            <select
                                 id="productId_field"
-                                className="adm-input"
-                                style={{ width: 320 }}
-                                placeholder="Paste a product ID to load its reviews"
+                                className="adm-select"
+                                style={{ minWidth: 320 }}
                                 value={productId}
                                 onChange={(e) => setProductId(e.target.value)}
-                            />
+                            >
+                                <option value="">Select a product...</option>
+                                {products.map(p => (
+                                    <option key={p._id} value={p._id}>
+                                        {p.name} ({p.numOfReviews || 0} {p.numOfReviews === 1 ? 'review' : 'reviews'})
+                                    </option>
+                                ))}
+                            </select>
                         </div>
                     </div>
                 </div>
@@ -119,11 +138,11 @@ const ProductReviews = () => {
                         columns={columns}
                         rows={listReviews}
                         rowKey={(r) => r._id}
-                        searchText={(r) => `${r.user} ${r.comment}`}
+                        searchText={(r) => `${r.name} ${r.comment}`}
                         searchPlaceholder="Search reviews..."
                     />
                 ) : (
-                    <div className="adm-card"><div className="adm-card-body adm-empty">No reviews.</div></div>
+                    <div className="adm-card"><div className="adm-card-body adm-empty">{productId ? 'This product has no reviews.' : 'Select a product to see its reviews.'}</div></div>
                 )}
             </AdminLayout>
         </>

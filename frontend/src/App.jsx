@@ -43,6 +43,7 @@ import HomePage from './Components/HomePage'
 import TrashProducts from './Components/Admin/TrashProducts'
 import TrashUsers from './Components/Admin/TrashUsers'
 import NewUser from './Components/Admin/NewUser'
+import SalesReport from './Components/Admin/SalesReport'
 function App() {
   const dispatch = useDispatch()
 
@@ -247,6 +248,14 @@ function App() {
               <ProtectedRoute isAdmin={true} >
                 <ProductReviews />
               </ProtectedRoute>} />
+          <Route
+            path="/admin/sales"
+            element={
+              <ProtectedRoute isAdmin={true}>
+                <SalesReport />
+              </ProtectedRoute>
+            }
+          />
         </Routes>
         <Footer />
       </Router>

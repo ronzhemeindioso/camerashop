@@ -6,6 +6,9 @@ import React, { useEffect, useMemo, useState } from 'react'
  * searchText(row): string used for the search box (omit to hide the search box)
  * filters: extra controls shown beside the search box
  * actions: extra buttons shown after the search box (e.g. "+ Add product")
+ * selectable: show a checkbox column (select one / select all on the page)
+ * selectedIds: array of selected row keys (controlled by the parent)
+ * onSelectionChange(ids): called with the new array of selected row keys
  */
 const DataTable = ({
     title,
@@ -17,6 +20,9 @@ const DataTable = ({
     filters,
     actions,
     emptyText = 'Nothing to show yet.',
+    selectable = false,
+    selectedIds = [],
+    onSelectionChange = () => { },
 }) => {
     const [query, setQuery] = useState('')
     const [sort, setSort] = useState({ key: null, dir: 'asc' })
@@ -47,6 +53,27 @@ const DataTable = ({
     const current = Math.min(page, totalPages)
     const start = (current - 1) * pageSize
     const visible = sorted.slice(start, start + pageSize)
+
+    // ----- checkbox selection -----
+    const pageIds = visible.map(rowKey)
+    const allOnPage = pageIds.length > 0 && pageIds.every(id => selectedIds.includes(id))
+    const someOnPage = pageIds.some(id => selectedIds.includes(id))
+
+    const togglePage = () => {
+        if (allOnPage) {
+            onSelectionChange(selectedIds.filter(id => !pageIds.includes(id)))
+        } else {
+            onSelectionChange([...new Set([...selectedIds, ...pageIds])])
+        }
+    }
+
+    const toggleRow = (id) => {
+        onSelectionChange(
+            selectedIds.includes(id)
+                ? selectedIds.filter(x => x !== id)
+                : [...selectedIds, id]
+        )
+    }
 
     // Go back to page 1 when the search or page size changes
     useEffect(() => { setPage(1) }, [query, pageSize])
@@ -93,6 +120,17 @@ const DataTable = ({
                 <table className="adm-table">
                     <thead>
                         <tr>
+                            {selectable && (
+                                <th style={{ width: 40 }}>
+                                    <input
+                                        type="checkbox"
+                                        aria-label="Select all rows on this page"
+                                        checked={allOnPage}
+                                        ref={(el) => { if (el) el.indeterminate = someOnPage && !allOnPage }}
+                                        onChange={togglePage}
+                                    />
+                                </th>
+                            )}
                             {columns.map(col => (
                                 <th
                                     key={col.key}
@@ -116,10 +154,20 @@ const DataTable = ({
                     <tbody>
                         {visible.length === 0 ? (
                             <tr>
-                                <td colSpan={columns.length} className="adm-empty">{emptyText}</td>
+                                <td colSpan={columns.length + (selectable ? 1 : 0)} className="adm-empty">{emptyText}</td>
                             </tr>
                         ) : visible.map(row => (
-                            <tr key={rowKey(row)}>
+                            <tr key={rowKey(row)} className={selectable && selectedIds.includes(rowKey(row)) ? 'adm-row-selected' : ''}>
+                                {selectable && (
+                                    <td>
+                                        <input
+                                            type="checkbox"
+                                            aria-label="Select row"
+                                            checked={selectedIds.includes(rowKey(row))}
+                                            onChange={() => toggleRow(rowKey(row))}
+                                        />
+                                    </td>
+                                )}
                                 {columns.map(col => (
                                     <td key={col.key} style={col.align ? { textAlign: col.align } : undefined}>
                                         {col.render ? col.render(row) : row[col.key]}

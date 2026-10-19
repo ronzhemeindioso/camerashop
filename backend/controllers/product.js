@@ -1,3 +1,4 @@
+const mongoose = require('mongoose')
 const Product = require('../models/product')
 const Order = require('../models/order')
 const cloudinary = require('cloudinary')
@@ -232,6 +233,76 @@ exports.deleteProduct = async (req, res, next) => {
     })
 }
 
+// Bulk soft delete: body = { ids: ['<productId>', '<productId>', ...] }
+exports.bulkDeleteProducts = async (req, res) => {
+    const { ids } = req.body || {}
+
+    if (!Array.isArray(ids) || ids.length === 0) {
+        return res.status(400).json({
+            success: false,
+            message: 'Select at least one product to delete'
+        })
+    }
+
+    const validIds = ids.filter(id => mongoose.Types.ObjectId.isValid(id))
+    if (validIds.length === 0) {
+        return res.status(400).json({
+            success: false,
+            message: 'No valid product ids were sent'
+        })
+    }
+
+    const result = await Product.updateMany(
+        { _id: { $in: validIds }, deletedAt: null },
+        { deletedAt: new Date() }
+    )
+
+    return res.status(200).json({
+        success: true,
+        deletedCount: result.modifiedCount,
+        message: `${result.modifiedCount} product(s) deleted`
+    })
+}
+
+// Permanent delete (hard delete). Only products that are already in the trash can be removed.
+// body = { ids: ['<productId>', ...] }
+exports.permanentDeleteProducts = async (req, res) => {
+    const { ids } = req.body || {}
+
+    if (!Array.isArray(ids) || ids.length === 0) {
+        return res.status(400).json({
+            success: false,
+            message: 'Select at least one product to delete permanently'
+        })
+    }
+
+    const validIds = ids.filter(id => mongoose.Types.ObjectId.isValid(id))
+
+    // deletedAt: { $ne: null } -> never touches an active product
+    const products = await Product.find({ _id: { $in: validIds }, deletedAt: { $ne: null } })
+    if (products.length === 0) {
+        return res.status(404).json({
+            success: false,
+            message: 'No deleted products found'
+        })
+    }
+
+    // remove the photos from Cloudinary first
+    for (const product of products) {
+        for (const img of product.images) {
+            try { await cloudinary.v2.uploader.destroy(img.public_id) } catch (e) { console.log(e) }
+        }
+    }
+
+    const result = await Product.deleteMany({ _id: { $in: products.map(p => p._id) } })
+
+    return res.status(200).json({
+        success: true,
+        deletedCount: result.deletedCount,
+        message: `${result.deletedCount} product(s) permanently deleted`
+    })
+}
+
 exports.restoreProduct = async (req, res, next) => {
     const product = await Product.findOneAndUpdate(
         { _id: req.params.id, deletedAt: { $ne: null } },
@@ -286,33 +357,70 @@ exports.createProductReview = async (req, res, next) => {
 }
 
 exports.getProductReviews = async (req, res, next) => {
+    if (!mongoose.Types.ObjectId.isValid(req.query.id)) {
+        return res.status(400).json({
+            success: false,
+            message: 'Invalid product id'
+        })
+    }
     const product = await Product.findById(req.query.id);
+    if (!product) {
+        return res.status(404).json({
+            success: false,
+            message: 'Product not found'
+        })
+    }
     res.status(200).json({
         success: true,
         reviews: product.reviews
     })
 }
 
+// Admin deletes a review  =>  DELETE /api/v1/reviews?id=<reviewId>&productId=<productId>
 exports.deleteReview = async (req, res, next) => {
-    console.log(req.query)
-    const product = await Product.findById(req.query.productId);
-    const reviews = product.reviews.filter(review => review._id.toString() !== req.query.id.toString());
+    const { id, productId } = req.query
+
+    if (!id || !productId || !mongoose.Types.ObjectId.isValid(productId)) {
+        return res.status(400).json({
+            success: false,
+            message: 'Review id and product id are required'
+        })
+    }
+
+    const product = await Product.findById(productId);
+    if (!product) {
+        return res.status(404).json({
+            success: false,
+            message: 'Product not found'
+        })
+    }
+
+    const exists = product.reviews.some(review => review._id.toString() === id.toString())
+    if (!exists) {
+        return res.status(404).json({
+            success: false,
+            message: 'Review not found'
+        })
+    }
+
+    // keep every review except the deleted one
+    const reviews = product.reviews.filter(review => review._id.toString() !== id.toString());
     const numOfReviews = reviews.length;
 
-    const ratings = product.reviews.reduce((acc, item) => item.rating + acc, 0) / reviews.length
+    // new average is calculated from the remaining reviews (0 when none are left)
+    const ratings = numOfReviews === 0
+        ? 0
+        : reviews.reduce((acc, item) => acc + item.rating, 0) / numOfReviews
 
-    await Product.findByIdAndUpdate(req.query.productId, {
-        reviews,
-        ratings,
-        numOfReviews
-    }, {
-        new: true,
-        runValidators: true,
-        useFindAndModify: false
-    })
+    product.reviews = reviews
+    product.numOfReviews = numOfReviews
+    product.ratings = ratings
+    await product.save({ validateBeforeSave: false })
 
     return res.status(200).json({
-        success: true
+        success: true,
+        numOfReviews,
+        ratings
     })
 }
 

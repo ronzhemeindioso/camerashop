@@ -62,7 +62,7 @@ const OrdersList = () => {
             key: 'actions', label: '',
             render: (o) => (
                 <div className="adm-actions">
-                    <Link to={`/admin/order/${o._id}`} className="adm-icon-btn" title="View / process">
+                    <Link to={`/admin/order/${o._id}`} className="adm-icon-btn" title={o.orderStatus === 'Delivered' ? 'View (delivered, locked)' : 'View / process'}>
                         <i className="fa fa-eye"></i>
                     </Link>
                     <button className="adm-icon-btn danger" title="Delete" onClick={() => deleteOrderHandler(o._id)}>

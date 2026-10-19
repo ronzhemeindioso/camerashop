@@ -1,0 +1,34 @@
+/* Append this to the END of src/Components/Admin/admin.css */
+
+/* Delete selected + Add product sit together on the right */
+.adm-action-group {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+/* Red delete button (the .adm-card-head prefix makes sure it beats the default white .adm-btn) */
+.adm-card-head .adm-btn.adm-btn-danger {
+  background: #c62828;
+  border-color: #c62828;
+  color: #fff;
+  font-weight: 600;
+}
+
+.adm-card-head .adm-btn.adm-btn-danger:hover {
+  background: #a61f1f;
+  border-color: #a61f1f;
+  color: #fff;
+}
+
+/* Checkboxes in the table */
+.adm-table input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+  accent-color: #7e3d84;
+}
+
+.adm-row-selected {
+  background: #f6eefa;
+}

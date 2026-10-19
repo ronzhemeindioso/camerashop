@@ -26,9 +26,9 @@ body.login-mode #root {
   flex: 1;
   min-height: 0;
   display: flex;
-  align-items: center;
+  align-items: flex-start; /* sit near the top instead of vertically centered */
   justify-content: center;
-  padding: 2rem 1rem 1.5rem;
+  padding: 3.25rem 1rem 1.5rem;
   box-sizing: border-box;
   background-color: #f6effa;
   text-align: left;
@@ -242,8 +242,59 @@ body.login-mode #root {
 .login-submit:hover { background: var(--lg-purple-dark); }
 .login-submit:active { transform: translateY(1px); }
 
+/* ---------- Social sign-in ---------- */
+.login-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 1.4rem 0 1rem;
+  font-size: 0.75rem;
+  color: var(--lg-muted);
+}
+.login-divider::before,
+.login-divider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--lg-border);
+}
+
+.login-social {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.login-social-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  height: 46px;
+  padding: 0 12px;
+  border: 1.5px solid var(--lg-border);
+  border-radius: 999px;
+  background: #fff;
+  color: var(--lg-text);
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s, box-shadow 0.2s, transform 0.1s;
+}
+.login-social-btn:hover {
+  border-color: var(--lg-purple);
+  background: #faf5fc;
+  box-shadow: 0 4px 12px rgba(126, 61, 132, 0.15);
+}
+.login-social-btn:active { transform: translateY(1px); }
+.login-social-btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(126, 61, 132, 0.25);
+}
+.login-social-btn svg { flex-shrink: 0; }
+
 .login-mobile-signup {
-  display: none;
+  display: block;
   margin-top: 1.4rem;
   text-align: center;
   font-size: 0.88rem;
@@ -266,17 +317,62 @@ body.login-mode #root {
   .login-side-body {
     padding: 1rem 0 0.4rem;
   }
-  .login-side-question,
-  .login-ghost-btn {
-    display: none;
-  }
   .login-page .login-side h2 { font-size: 1.6rem; margin-bottom: 0.5rem; }
   .login-form-wrap { padding: 2rem 1.6rem; }
-  .login-mobile-signup { display: block; }
 }
 
-/* Footer on the login page: no extra gap, same lavender background */
+/* Hide the announcement banner and the footer on the login page only */
+body.login-mode .announce-bar,
 body.login-mode footer {
-  margin-top: 0;
-  background-color: #f6effa;
+  display: none;
+}
+
+/* Simplified top menu on the login page: no search, login/sign up or cart */
+body.login-mode .site-header .search-form,
+body.login-mode .site-header .nav-actions {
+  display: none;
+}
+
+/* Sign-up prompt now lives under the social buttons, so hide the left-panel copy */
+.login-side-question,
+.login-ghost-btn {
+  display: none;
+}
+
+/* ---------- Forgot password (single-card variant) ---------- */
+.login-card.login-card-single {
+  grid-template-columns: 1fr;
+  max-width: 440px;
+  min-height: 0;
+}
+
+.login-hint {
+  margin: -1.2rem 0 1.8rem;
+  font-size: 0.88rem;
+  line-height: 1.5;
+  color: var(--lg-muted);
+}
+
+.login-submit:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.login-back {
+  margin-top: 1.4rem;
+  text-align: center;
+  font-size: 0.88rem;
+}
+.login-page .login-back a {
+  color: var(--lg-purple);
+  font-weight: 700;
+}
+
+/* Forgot password: no top menu at all, card centered on the page */
+body.forgot-mode .site-header {
+  display: none;
+}
+body.forgot-mode .login-page {
+  align-items: flex-start;
+  padding-top: 9rem;   /* smaller = higher, larger = lower */
 }

@@ -12,6 +12,8 @@ import 'react-toastify/dist/ReactToastify.css';
 import { useDispatch, useSelector } from 'react-redux'
 import { getOrderDetails, updateOrder, clearErrors } from '../../actions/orderActions'
 import { UPDATE_ORDER_RESET } from '../../constants/orderConstants'
+const STATUS_FLOW = ['Processing', 'Shipped', 'Delivered']
+
 const ProcessOrder = () => {
     const dispatch = useDispatch();
     const { loading, order = {} } = useSelector(state => state.orderDetails)
@@ -87,10 +89,23 @@ const ProcessOrder = () => {
         }
     }, [error, isUpdated, orderId])
 
+    // start the dropdown on the order's current status (it used to start empty)
+    useEffect(() => {
+        if (orderStatus) setStatus(orderStatus)
+    }, [orderStatus])
+
+    const isDelivered = orderStatus === 'Delivered'
+
     const updateOrderHandler = (id) => {
-        const formData = new FormData();
-        formData.set('status', status);
-        dispatch(updateOrder(id, formData))
+        if (isDelivered) {
+            errMsg('This order is already delivered and can no longer be updated')
+            return
+        }
+        if (!status) {
+            errMsg('Please choose a status')
+            return
+        }
+        dispatch(updateOrder(id, { status }))
     }
 
     const shippingDetails = shippingInfo && `${shippingInfo.address}, ${shippingInfo.city}, ${shippingInfo.postalCode}, ${shippingInfo.country}`
@@ -142,21 +157,48 @@ const ProcessOrder = () => {
                                 </div>
                                 <div className="col-12 col-lg-3 mt-5">
                                     <h4 className="my-4">Status</h4>
-                                    <div className="form-group">
-                                        <select
-                                            className="form-control"
-                                            name='status'
-                                            value={status}
-                                            onChange={(e) => setStatus(e.target.value)}
+                                    {isDelivered ? (
+                                        <div
+                                            style={{
+                                                background: '#e8f5e9',
+                                                border: '1px solid #a5d6a7',
+                                                color: '#1b5e20',
+                                                borderRadius: 10,
+                                                padding: '14px 16px',
+                                                lineHeight: 1.5,
+                                            }}
                                         >
-                                            <option value="Processing">Processing</option>
-                                            <option value="Shipped">Shipped</option>
-                                            <option value="Delivered">Delivered</option>
-                                        </select>
-                                    </div>
-                                    <button className="btn btn-primary btn-block" onClick={() => updateOrderHandler(order._id)}>
-                                        Update Status
-                                    </button>
+                                            <i className="fa fa-lock"></i> <b>Delivered</b>
+                                            <div style={{ fontSize: '0.9rem', marginTop: 4 }}>
+                                                This order is complete and can no longer be updated.
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <>
+                                            <div className="form-group">
+                                                <select
+                                                    className="form-control"
+                                                    name='status'
+                                                    value={status}
+                                                    onChange={(e) => setStatus(e.target.value)}
+                                                >
+                                                    {STATUS_FLOW.map(option => (
+                                                        <option
+                                                            key={option}
+                                                            value={option}
+                                                            disabled={STATUS_FLOW.indexOf(option) < STATUS_FLOW.indexOf(orderStatus)}
+                                                        >
+                                                            {option}
+                                                        </option>
+                                                    ))}
+                                                </select>
+                                            </div>
+                                            <button className="btn btn-primary btn-block" onClick={() => updateOrderHandler(order._id)}>
+                                                Update Status
+                                            </button>
+                                        </>
+                                    )}
+
                                 </div>
                             </div>
                         )}

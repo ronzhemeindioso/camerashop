@@ -11,6 +11,8 @@ const {
 
     updateProduct,
     deleteProduct,
+    bulkDeleteProducts,
+    permanentDeleteProducts,
     restoreProduct,
     getProductReviews,
     createProductReview,
@@ -26,7 +28,9 @@ router.get('/product/:id', getSingleProduct)
 router.get('/admin/products', isAuthenticatedUser, authorizeRoles('admin'), getAdminProducts);
 
 router.get('/admin/product/:id', isAuthenticatedUser, authorizeRoles('admin'), getAdminSingleProduct);
-router.put('/admin/product/:id', upload.array('images', 10), updateProduct);
+router.put('/admin/product/:id', isAuthenticatedUser, authorizeRoles('admin'), upload.array('images', 10), updateProduct);
+router.delete('/admin/products/permanent', isAuthenticatedUser, authorizeRoles('admin'), permanentDeleteProducts);
+router.delete('/admin/products/bulk', isAuthenticatedUser, authorizeRoles('admin'), bulkDeleteProducts);
 router.delete('/admin/product/:id', isAuthenticatedUser, authorizeRoles('admin'), deleteProduct);
 router.put('/admin/product/:id/restore', isAuthenticatedUser, authorizeRoles('admin'), restoreProduct);
 

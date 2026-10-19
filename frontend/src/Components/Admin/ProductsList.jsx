@@ -12,6 +12,7 @@ import { useDispatch, useSelector } from 'react-redux'
 import {
     getAdminProducts,
     deleteProduct,
+    bulkDeleteProducts,
     clearErrors,
 } from '../../actions/productActions'
 import { DELETE_PRODUCT_RESET } from '../../constants/productConstants'
@@ -29,6 +30,7 @@ const ProductsList = () => {
 
     const [category, setCategory] = useState('')
     const [stockFilter, setStockFilter] = useState('')
+    const [selected, setSelected] = useState([])   // ids ticked in the checkbox column
 
     useEffect(() => {
         dispatch(getAdminProducts())
@@ -45,6 +47,7 @@ const ProductsList = () => {
 
         if (isDeleted) {
             toast.success('Product deleted successfully', { position: 'bottom-right' })
+            setSelected([])
             dispatch({ type: DELETE_PRODUCT_RESET })
         }
     }, [error, deleteError, isDeleted,])
@@ -52,6 +55,13 @@ const ProductsList = () => {
     const softDeleteHandler = (id, name) => {
         if (window.confirm(`Move "${name}" to trash? You can restore it later.`)) {
             dispatch(deleteProduct(id))
+        }
+    }
+
+    const bulkDeleteHandler = () => {
+        if (selectedInView.length === 0) return
+        if (window.confirm(`Move ${selectedInView.length} selected product(s) to trash? You can restore them later.`)) {
+            dispatch(bulkDeleteProducts(selectedInView))
         }
     }
 
@@ -67,6 +77,10 @@ const ProductsList = () => {
         if (stockFilter === 'out' && p.stock > 0) return false
         return true
     })
+
+    // Only act on ticked rows that are still shown (a filter may have hidden some)
+    const shownIds = new Set(rows.map(p => p._id))
+    const selectedInView = selected.filter(id => shownIds.has(id))
 
     const columns = [
         { key: 'name', label: 'Product', sortable: true, render: (p) => <span className="adm-strong">{p.name}</span> },
@@ -160,7 +174,26 @@ const ProductsList = () => {
                                     </select>
                                 </>
                             }
-                            actions={<Link to="/admin/product" className="adm-btn adm-btn-primary">+ Add product</Link>}
+                            selectable
+                            selectedIds={selectedInView}
+                            onSelectionChange={setSelected}
+                            actions={
+                                <div className="adm-head-actions" style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                                    {selectedInView.length > 0 && (
+                                        <button
+                                            type="button"
+                                            className="adm-btn"
+                                            style={{ background: '#d32f2f', borderColor: '#d32f2f', color: '#fff', fontWeight: 600 }}
+                                            onMouseEnter={(e) => { e.currentTarget.style.background = '#b71c1c' }}
+                                            onMouseLeave={(e) => { e.currentTarget.style.background = '#d32f2f' }}
+                                            onClick={bulkDeleteHandler}
+                                        >
+                                            <i className="fa fa-trash"></i> Delete selected ({selectedInView.length})
+                                        </button>
+                                    )}
+                                    <Link to="/admin/product" className="adm-btn adm-btn-primary">+ Add product</Link>
+                                </div>
+                            }
                         />
                     </>
                 )}

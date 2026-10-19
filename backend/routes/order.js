@@ -11,6 +11,7 @@ const { newOrder,
 	totalSales,
 	customerSales,
 	salesPerMonth,
+	salesReport,
 
 
 } = require('../controllers/order')
@@ -26,4 +27,5 @@ router.get('/admin/total-orders', totalOrders);
 router.get('/admin/total-sales', totalSales);
 router.get('/admin/customer-sales', customerSales);
 router.get('/admin/sales-per-month', salesPerMonth);
+router.get('/admin/sales', isAuthenticatedUser, authorizeRoles('admin'), salesReport);
 module.exports = router;

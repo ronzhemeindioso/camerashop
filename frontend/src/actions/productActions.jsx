@@ -151,6 +151,28 @@ export const deleteProduct = (id) => async (dispatch) => {
     }
 }
 
+// Bulk delete: ids = array of product _id values
+export const bulkDeleteProducts = (ids) => async (dispatch) => {
+    try {
+        dispatch({ type: DELETE_PRODUCT_REQUEST })
+
+        const { data } = await axios.delete(`${import.meta.env.VITE_API}/admin/products/bulk`, {
+            data: { ids },
+            withCredentials: true
+        })
+
+        dispatch({
+            type: DELETE_PRODUCT_SUCCESS,
+            payload: data.success
+        })
+    } catch (error) {
+        dispatch({
+            type: DELETE_PRODUCT_FAIL,
+            payload: error.response?.data?.message || error.message
+        })
+    }
+}
+
 export const newReview = (reviewData) => async (dispatch) => {
     try {
         dispatch({ type: NEW_REVIEW_REQUEST })

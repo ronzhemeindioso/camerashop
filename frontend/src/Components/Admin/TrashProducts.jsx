@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import axios from 'axios'
+import Swal from 'sweetalert2'
 import { toast } from 'react-toastify'
 import 'react-toastify/dist/ReactToastify.css'
 
@@ -12,9 +13,13 @@ import { money } from './adminHelpers'
 
 const API = import.meta.env.VITE_API
 
+const RED = '#d32f2f'
+const RED_DARK = '#b71c1c'
+
 const TrashProducts = () => {
     const [products, setProducts] = useState([])
     const [loading, setLoading] = useState(true)
+    const [selected, setSelected] = useState([])
 
     const load = useCallback(async () => {
         try {
@@ -33,11 +38,41 @@ const TrashProducts = () => {
         try {
             await axios.put(`${API}/admin/product/${id}/restore`, {}, { withCredentials: true })
             toast.success('Product restored', { position: 'bottom-right' })
+            setSelected(prev => prev.filter(x => x !== id))
             load()
         } catch (error) {
             toast.error(error.response?.data?.message || error.message, { position: 'bottom-right' })
         }
     }
+
+    // Permanent delete for one or many products (ids = array of _id)
+    const permanentDelete = async (ids, label) => {
+        const result = await Swal.fire({
+            title: 'Delete permanently?',
+            text: `${label} will be removed for good, including its photos. This cannot be undone.`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Yes, delete forever',
+            confirmButtonColor: RED,
+        })
+        if (!result.isConfirmed) return
+
+        try {
+            const { data } = await axios.delete(`${API}/admin/products/permanent`, {
+                data: { ids },
+                withCredentials: true,
+            })
+            toast.success(data.message || 'Permanently deleted', { position: 'bottom-right' })
+            setSelected(prev => prev.filter(x => !ids.includes(x)))
+            load()
+        } catch (error) {
+            toast.error(error.response?.data?.message || error.message, { position: 'bottom-right' })
+        }
+    }
+
+    // only act on ticked rows that still exist in the list
+    const shownIds = new Set(products.map(p => p._id))
+    const selectedInView = selected.filter(id => shownIds.has(id))
 
     const columns = [
         { key: 'name', label: 'Product', sortable: true, render: (p) => <span className="adm-strong">{p.name}</span> },
@@ -54,6 +89,13 @@ const TrashProducts = () => {
                     <button className="adm-icon-btn" title="Restore" onClick={() => restore(p._id)}>
                         <i className="fa fa-undo"></i>
                     </button>
+                    <button
+                        className="adm-icon-btn danger"
+                        title="Delete permanently"
+                        onClick={() => permanentDelete([p._id], `"${p.name}"`)}
+                    >
+                        <i className="fa fa-trash"></i>
+                    </button>
                 </div>
             )
         },
@@ -64,7 +106,12 @@ const TrashProducts = () => {
             <MetaData title={'Deleted Products'} />
             <AdminLayout
                 title="Deleted products"
-                subtitle={<><b>{products.length}</b> in trash · <Link to="/admin/products">Back to products</Link></>}
+                subtitle={<><b>{products.length}</b> in trash</>}
+                actions={
+                    <Link to="/admin/products" className="adm-btn">
+                        Back to products
+                    </Link>
+                }
             >
                 {loading ? <Loader /> : (
                     <DataTable
@@ -75,6 +122,23 @@ const TrashProducts = () => {
                         searchText={(p) => `${p.name} ${p.category || ''}`}
                         searchPlaceholder="Search deleted products..."
                         emptyText="Trash is empty."
+                        selectable
+                        selectedIds={selectedInView}
+                        onSelectionChange={setSelected}
+                        actions={
+                            selectedInView.length > 0 && (
+                                <button
+                                    type="button"
+                                    className="adm-btn"
+                                    style={{ background: RED, borderColor: RED, color: '#fff', fontWeight: 600 }}
+                                    onMouseEnter={(e) => { e.currentTarget.style.background = RED_DARK }}
+                                    onMouseLeave={(e) => { e.currentTarget.style.background = RED }}
+                                    onClick={() => permanentDelete(selectedInView, `${selectedInView.length} selected product(s)`)}
+                                >
+                                    <i className="fa fa-trash"></i> Delete selected permanently ({selectedInView.length})
+                                </button>
+                            )
+                        }
                     />
                 )}
             </AdminLayout>

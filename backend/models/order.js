@@ -93,6 +93,11 @@ const orderSchema = mongoose.Schema({
     deliveredAt: {
         type: Date
     },
+    // true once the ordered quantities have been taken out of stock (so it only happens once)
+    stockDeducted: {
+        type: Boolean,
+        default: false
+    },
     createdAt: {
         type: Date,
         default: Date.now
