@@ -10,7 +10,6 @@ const links = [
     { to: '/admin/users', label: 'Users', match: (p) => p.startsWith('/admin/user') },
     { to: '/admin/orders', label: 'Orders', match: (p) => p.startsWith('/admin/order') },
     { to: '/admin/products', label: 'Products', match: (p) => p.startsWith('/admin/product') },
-    { to: '/admin/sales', label: 'Sales', match: (p) => p.startsWith('/admin/sales') },
     { to: '/admin/reviews', label: 'Reviews', match: (p) => p.startsWith('/admin/reviews') },
 ]
 

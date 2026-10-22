@@ -5,22 +5,24 @@ import AdminLayout from './AdminLayout'
 // import { getToken } from '../../Utils/helpers';
 // import axios from 'axios'
 import { toast } from 'react-toastify';
+import { useForm } from 'react-hook-form'
+import { yupResolver } from '@hookform/resolvers/yup'
+import { productSchema, PRODUCT_CATEGORIES, imageFileError } from '../../validation/schemas'
 import 'react-toastify/dist/ReactToastify.css';
 import { useDispatch, useSelector } from 'react-redux'
 import { newProduct, clearErrors } from '../../actions/productActions'
 import { NEW_PRODUCT_RESET } from '../../constants/productConstants'
 
+const FieldError = ({ error }) => error ? <div className="invalid-feedback">{error.message}</div> : null
+
 const NewProduct = () => {
     const dispatch = useDispatch()
     const { loading, error, success } = useSelector(state => state.newProduct)
 
-    const [name, setName] = useState('');
-    const [price, setPrice] = useState(0);
-    const [costPrice, setCostPrice] = useState(0);
-    const [description, setDescription] = useState('');
-    const [category, setCategory] = useState('Cameras');
-    const [stock, setStock] = useState(0);
-    const [seller, setSeller] = useState('');
+    const { register, handleSubmit, formState: { errors } } = useForm({
+        resolver: yupResolver(productSchema),
+        defaultValues: { name: '', price: '', costPrice: '', description: '', category: 'Cameras', stock: '', seller: '' },
+    })
     const [images, setImages] = useState([]);
     const [imagesPreview, setImagesPreview] = useState([])
     // const [error, setError] = useState('')
@@ -28,35 +30,19 @@ const NewProduct = () => {
     // const [success, setSuccess] = useState('')
     // const [product, setProduct] = useState({})
 
-    const categories = [
-        'Cameras',
-        'Lenses',
-        'Tripods & Stabilizers',
-        'Lighting',
-        'Memory Cards',
-        'Bags & Cases',
-        'Batteries & Chargers',
-        'Accessories'
-    ]
+    const categories = PRODUCT_CATEGORIES
 
     let navigate = useNavigate()
 
-    const submitHandler = (e) => {
-        e.preventDefault();
-
-        if (Number(price) <= Number(costPrice)) {
-            toast.error('Sell price must be higher than cost price', { position: 'bottom-right' });
-            return;
-        }
-
+    const submitHandler = (values) => {
         const formData = new FormData();
-        formData.set('name', name);
-        formData.set('price', price);
-        formData.set('costPrice', costPrice);
-        formData.set('description', description);
-        formData.set('category', category);
-        formData.set('stock', stock);
-        formData.set('seller', seller);
+        formData.set('name', values.name.trim());
+        formData.set('price', values.price);
+        formData.set('costPrice', values.costPrice);
+        formData.set('description', values.description.trim());
+        formData.set('category', values.category);
+        formData.set('stock', values.stock);
+        formData.set('seller', values.seller.trim());
 
         images.forEach(image => {
             formData.append('images', image)
@@ -66,7 +52,11 @@ const NewProduct = () => {
     }
 
     const onChange = e => {
-        const files = Array.from(e.target.files)
+        const files = Array.from(e.target.files).filter(file => {
+            const problem = imageFileError(file)
+            if (problem) toast.error(problem, { position: 'bottom-right' })
+            return !problem
+        })
         files.forEach(file => {
             const reader = new FileReader();
             reader.onload = () => {
@@ -148,7 +138,7 @@ const NewProduct = () => {
             <AdminLayout>
                     <>
                         <div className="wrapper my-5">
-                            <form className="shadow-lg" onSubmit={submitHandler} encType='multipart/form-data'>
+                            <form className="shadow-lg" onSubmit={handleSubmit(submitHandler)} encType='multipart/form-data' noValidate>
                                 <div className="adm-form-head">
                                     <h2>New product</h2>
                                     <p>Add a product to your catalogue</p>
@@ -159,10 +149,10 @@ const NewProduct = () => {
                                     <input
                                         type="text"
                                         id="name_field"
-                                        className="form-control"
-                                        value={name}
-                                        onChange={(e) => setName(e.target.value)}
+                                        className={`form-control ${errors.name ? 'is-invalid' : ''}`}
+                                        {...register('name')}
                                     />
+                                    <FieldError error={errors.name} />
                                 </div>
 
                                 <div className="form-group">
@@ -170,10 +160,10 @@ const NewProduct = () => {
                                     <input
                                         type="text"
                                         id="price_field"
-                                        className="form-control"
-                                        value={price}
-                                        onChange={(e) => setPrice(e.target.value)}
+                                        className={`form-control ${errors.price ? 'is-invalid' : ''}`}
+                                        {...register('price')}
                                     />
+                                    <FieldError error={errors.price} />
                                 </div>
 
                                 <div className="form-group">
@@ -181,35 +171,37 @@ const NewProduct = () => {
                                     <input
                                         type="text"
                                         id="cost_price_field"
-                                        className="form-control"
-                                        value={costPrice}
-                                        onChange={(e) => setCostPrice(e.target.value)}
+                                        className={`form-control ${errors.costPrice ? 'is-invalid' : ''}`}
+                                        {...register('costPrice')}
                                     />
+                                    <FieldError error={errors.costPrice} />
                                 </div>
 
                                 <div className="form-group">
                                     <label htmlFor="description_field">Description</label>
-                                    <textarea className="form-control" id="description_field" rows="8" value={description} onChange={(e) => setDescription(e.target.value)}></textarea>
+                                    <textarea className={`form-control ${errors.description ? 'is-invalid' : ''}`} id="description_field" rows="8" {...register('description')}></textarea>
+                                    <FieldError error={errors.description} />
                                 </div>
 
                                 <div className="form-group">
                                     <label htmlFor="category_field">Category</label>
-                                    <select className="form-control" id="category_field" value={category} onChange={(e) => setCategory(e.target.value)}>
+                                    <select className={`form-control ${errors.category ? 'is-invalid' : ''}`} id="category_field" {...register('category')}>
                                         {categories.map(category => (
                                             <option key={category} value={category} >{category}</option>
                                         ))}
 
                                     </select>
+                                    <FieldError error={errors.category} />
                                 </div>
                                 <div className="form-group">
                                     <label htmlFor="stock_field">Stock</label>
                                     <input
                                         type="number"
                                         id="stock_field"
-                                        className="form-control"
-                                        value={stock}
-                                        onChange={(e) => setStock(e.target.value)}
+                                        className={`form-control ${errors.stock ? 'is-invalid' : ''}`}
+                                        {...register('stock')}
                                     />
+                                    <FieldError error={errors.stock} />
                                 </div>
 
                                 <div className="form-group">
@@ -217,10 +209,10 @@ const NewProduct = () => {
                                     <input
                                         type="text"
                                         id="seller_field"
-                                        className="form-control"
-                                        value={seller}
-                                        onChange={(e) => setSeller(e.target.value)}
+                                        className={`form-control ${errors.seller ? 'is-invalid' : ''}`}
+                                        {...register('seller')}
                                     />
+                                    <FieldError error={errors.seller} />
                                 </div>
 
                                 <div className='form-group'>

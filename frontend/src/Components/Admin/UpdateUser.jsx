@@ -6,12 +6,17 @@ import AdminLayout from './AdminLayout'
 import { errMsg, successMsg, getToken } from '../../Utils/helpers';
 
 import axios from 'axios';
+import { useForm } from 'react-hook-form'
+import { yupResolver } from '@hookform/resolvers/yup'
+import { updateUserSchema } from '../../validation/schemas'
+
+const FieldError = ({ error }) => error ? <div className="invalid-feedback">{error.message}</div> : null
 
 const UpdateUser = () => {
-    const [name, setName] = useState('')
-    const [email, setEmail] = useState('')
-    const [role, setRole] = useState('')
-    const [password, setPassword] = useState('')
+    const { register, handleSubmit, reset, formState: { errors } } = useForm({
+        resolver: yupResolver(updateUserSchema),
+        defaultValues: { name: '', email: '', role: 'user', password: '' },
+    })
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState('')
     const [user, setUser] = useState(true)
@@ -53,9 +58,7 @@ const UpdateUser = () => {
         if (user && user._id !== id) {
             getUserDetails(id)
         } else {
-            setName(user.name);
-            setEmail(user.email);
-            setRole(user.role)
+            reset({ name: user.name ?? '', email: user.email ?? '', role: user.role ?? 'user', password: '' })
         }
         if (error) {
             errMsg(error);
@@ -67,11 +70,10 @@ const UpdateUser = () => {
 
         }
     }, [error, isUpdated, id, user])
-    const submitHandler = (e) => {
-        e.preventDefault();
+    const submitHandler = ({ name, email, role, password }) => {
         const formData = new FormData();
-        formData.set('name', name);
-        formData.set('email', email);
+        formData.set('name', name.trim());
+        formData.set('email', email.trim());
         formData.set('role', role);
         if (password) formData.set('password', password);
         updateUser(user._id, formData)
@@ -85,7 +87,7 @@ const UpdateUser = () => {
             <AdminLayout>
                 <div className="wrapper my-5">
                     <div>
-                        <form className="shadow-lg" onSubmit={submitHandler}>
+                        <form className="shadow-lg" onSubmit={handleSubmit(submitHandler)} noValidate>
                             <div className="adm-form-head" style={{ marginBottom: '1.25rem' }}>
                                 <h2>Edit user</h2>
                                 <p>Change this user's name, email, role or password</p>
@@ -97,12 +99,10 @@ const UpdateUser = () => {
                                     <input
                                         type="text"
                                         id="name_field"
-                                        className="form-control"
-                                        name="name"
-                                        value={name}
-                                        onChange={(e) => setName(e.target.value)}
-                                        required
+                                        className={`form-control ${errors.name ? 'is-invalid' : ''}`}
+                                        {...register('name')}
                                     />
+                                    <FieldError error={errors.name} />
                                 </div>
 
                                 <div className="form-group">
@@ -110,12 +110,10 @@ const UpdateUser = () => {
                                     <input
                                         type="email"
                                         id="email_field"
-                                        className="form-control"
-                                        name="email"
-                                        value={email}
-                                        onChange={(e) => setEmail(e.target.value)}
-                                        required
+                                        className={`form-control ${errors.email ? 'is-invalid' : ''}`}
+                                        {...register('email')}
                                     />
+                                    <FieldError error={errors.email} />
                                 </div>
                             </div>
 
@@ -124,14 +122,13 @@ const UpdateUser = () => {
                                     <label htmlFor="role_field">Role</label>
                                     <select
                                         id="role_field"
-                                        className="form-control"
-                                        name="role"
-                                        value={role}
-                                        onChange={(e) => setRole(e.target.value)}
+                                        className={`form-control ${errors.role ? 'is-invalid' : ''}`}
+                                        {...register('role')}
                                     >
                                         <option value="user">user</option>
                                         <option value="admin">admin</option>
                                     </select>
+                                    <FieldError error={errors.role} />
                                 </div>
 
                                 <div className="form-group">
@@ -139,14 +136,12 @@ const UpdateUser = () => {
                                     <input
                                         type="password"
                                         id="password_field"
-                                        className="form-control"
-                                        name="password"
-                                        value={password}
-                                        onChange={(e) => setPassword(e.target.value)}
+                                        className={`form-control ${errors.password ? 'is-invalid' : ''}`}
+                                        {...register('password')}
                                         placeholder="Leave blank to keep current"
-                                        minLength={6}
                                         autoComplete="new-password"
                                     />
+                                    <FieldError error={errors.password} />
                                 </div>
                             </div>
 

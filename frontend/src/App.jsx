@@ -43,7 +43,8 @@ import HomePage from './Components/HomePage'
 import TrashProducts from './Components/Admin/TrashProducts'
 import TrashUsers from './Components/Admin/TrashUsers'
 import NewUser from './Components/Admin/NewUser'
-import SalesReport from './Components/Admin/SalesReport'
+import SalesReport from './Components/Admin/SalesChart'
+import SetupProfile from './Components/User/SetupProfile';
 function App() {
   const dispatch = useDispatch()
 
@@ -140,8 +141,8 @@ function App() {
           <Route path="/search/:keyword" element={<Home />} exact="true" />
           <Route path="/login" element={<Login />} exact="true" />
           <Route path="/register" element={<Register exact="true" />} />
+          <Route path="/setup-profile" element={<ProtectedRoute><SetupProfile /></ProtectedRoute>} />
           <Route path="/password/forgot" element={<ForgotPassword />} exact="true" />
-          <Route path="/password/reset/:token" element={<NewPassword />} exact="true" />
           <Route path="/me" element={<Profile />} exact="true" />
           <Route path="/me/update" element={<UpdateProfile />} exact="true" />
           <Route path="/password/update" element={<UpdatePassword />} />

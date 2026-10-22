@@ -116,7 +116,9 @@ export const updateOrder = (id, orderData) => async (dispatch) => {
         const { data } = await axios.put(`${import.meta.env.VITE_API}/admin/order/${id}`, orderData, config)
         dispatch({
             type: UPDATE_ORDER_SUCCESS,
-            payload: data.success
+            payload: data.success,
+            emailSent: data.emailSent,
+            emailMessage: data.emailMessage
         })
     } catch (error) {
         dispatch({

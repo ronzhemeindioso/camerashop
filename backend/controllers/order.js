@@ -1,5 +1,8 @@
 const Order = require('../models/order');
 const Product = require('../models/product');
+const User = require('../models/user');
+const sendEmail = require('../utils/sendEmail');
+const { buildOrderEmailHtml, buildReceiptPdf } = require('../utils/orderReceipt');
 
 
 
@@ -25,6 +28,7 @@ exports.newOrder = async (req, res, next) => {
         totalPrice,
         paymentInfo,
         paidAt: Date.now(),
+        statusHistory: [{ status: 'Processing', at: Date.now() }],
         user: req.user._id
     })
 
@@ -46,14 +50,27 @@ exports.myOrders = async (req, res, next) => {
 exports.getSingleOrder = async (req, res, next) => {
     const order = await Order.findById(req.params.id).populate('user', 'name email')
     if (!order) {
-        res.status(404).json({
+        return res.status(404).json({
             message: 'No Order found with this ID',
-
         })
     }
+
+    const data = order.toObject()
+
+    // Admins also get the current stock of each ordered product (shown on the process-order page)
+    if (req.user && req.user.role === 'admin') {
+        const products = await Product.find({ _id: { $in: data.orderItems.map(item => item.product) } }).select('stock')
+        const stockById = new Map(products.map(p => [String(p._id), p.stock]))
+        data.orderItems = data.orderItems.map(item => ({
+            ...item,
+            // null = the product no longer exists
+            stock: stockById.has(String(item.product)) ? stockById.get(String(item.product)) : null
+        }))
+    }
+
     res.status(200).json({
         success: true,
-        order
+        order: data
     })
 }
 
@@ -91,9 +108,36 @@ exports.deleteOrder = async (req, res, next) => {
 
 const STATUS_FLOW = ['Processing', 'Shipped', 'Delivered']
 
+// Emails the customer the updated order (items, subtotals, grand total) with a PDF receipt attached.
+// Never throws - a mail problem must not undo a status change that was already saved.
+const emailOrderUpdate = async (order) => {
+    try {
+        const customer = await User.findById(order.user).select('name email')
+        if (!customer || !customer.email) {
+            return { sent: false, reason: 'Customer has no email address' }
+        }
+        const pdf = await buildReceiptPdf(order, customer.name)
+        await sendEmail({
+            email: customer.email,
+            subject: `Your order #${order._id} is now ${order.orderStatus}`,
+            message: `Your order #${order._id} is now ${order.orderStatus}. Grand total: $${Number(order.totalPrice).toFixed(2)}. Your receipt is attached.`,
+            html: buildOrderEmailHtml(order, customer.name),
+            attachments: [{
+                filename: `receipt-${order._id}.pdf`,
+                content: pdf,
+                contentType: 'application/pdf'
+            }]
+        })
+        return { sent: true, to: customer.email }
+    } catch (error) {
+        console.error('Order update email failed:', error.message)
+        return { sent: false, reason: error.message }
+    }
+}
+
 // Admin updates the status of an order  =>  PUT /api/v1/admin/order/:id   body: { status }
 exports.updateOrder = async (req, res, next) => {
-    const { status } = req.body || {}
+    const { status, trackingNumber } = req.body || {}
 
     if (!STATUS_FLOW.includes(status)) {
         return res.status(400).json({
@@ -116,6 +160,8 @@ exports.updateOrder = async (req, res, next) => {
             message: 'You have already delivered this order'
         })
     }
+
+    const previousStatus = order.orderStatus
 
     if (STATUS_FLOW.indexOf(status) < STATUS_FLOW.indexOf(order.orderStatus)) {
         return res.status(400).json({
@@ -143,15 +189,27 @@ exports.updateOrder = async (req, res, next) => {
         order.stockDeducted = true
     }
 
+    if (status !== order.orderStatus) {
+        order.statusHistory.push({ status, at: Date.now() })
+    }
+    if (status === 'Shipped' && typeof trackingNumber === 'string' && trackingNumber.trim()) {
+        order.trackingNumber = trackingNumber.trim().slice(0, 100)
+    }
+
     order.orderStatus = status
     if (status === 'Delivered') {
         order.deliveredAt = Date.now()
     }
     await order.save()
 
+    // let the customer know (only when the status actually changed)
+    const email = status !== previousStatus ? await emailOrderUpdate(order) : { sent: false, reason: 'Status unchanged' }
+
     return res.status(200).json({
         success: true,
-        order
+        order,
+        emailSent: email.sent,
+        emailMessage: email.sent ? `Email sent to ${email.to}` : email.reason
     })
 }
 

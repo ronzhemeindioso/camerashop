@@ -32,6 +32,48 @@ const userSchema = new mongoose.Schema({
             required: true
         }
     },
+    // Optional profile details (filled in on the "Set up your profile" page, can be skipped)
+    phoneNo: {
+        type: String,
+        default: '',
+        trim: true,
+        maxLength: [20, 'Phone number is too long']
+    },
+    address: {
+        type: String,
+        default: '',
+        trim: true,
+        maxLength: [200, 'Address is too long']
+    },
+    barangay: {
+        type: String,
+        default: '',
+        trim: true,
+        maxLength: [80, 'Barangay is too long']
+    },
+    city: {
+        type: String,
+        default: '',
+        trim: true,
+        maxLength: [60, 'City is too long']
+    },
+    province: {
+        type: String,
+        default: '',
+        trim: true,
+        maxLength: [60, 'Province is too long']
+    },
+    postalCode: {
+        type: String,
+        default: '',
+        trim: true,
+        maxLength: [12, 'Postal code is too long']
+    },
+    country: {
+        type: String,
+        default: '',
+        trim: true
+    },
     role: {
         type: String,
         default: 'user'

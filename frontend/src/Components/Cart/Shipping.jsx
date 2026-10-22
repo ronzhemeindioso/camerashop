@@ -9,12 +9,13 @@ import { saveShippingInfo } from '../../actions/cartActions'
 const Shipping = () => {
     const dispatch = useDispatch();
     const { shippingInfo } = useSelector(state => state.cart)
+    const { user } = useSelector(state => state.auth)   // details saved in "Set up your profile"
     const countriesList = Object.values(countries)
-    const [address, setAddress] = useState(shippingInfo.address)
-    const [city, setCity] = useState(shippingInfo.city)
-    const [postalCode, setPostalCode] = useState(shippingInfo.postalCode)
-    const [phoneNo, setPhoneNo] = useState(shippingInfo.phoneNo)
-    const [country, setCountry] = useState(shippingInfo.country)
+    const [address, setAddress] = useState(shippingInfo.address || [user?.address, user?.barangay, user?.province].filter(Boolean).join(', '))
+    const [city, setCity] = useState(shippingInfo.city || user?.city || '')
+    const [postalCode, setPostalCode] = useState(shippingInfo.postalCode || user?.postalCode || '')
+    const [phoneNo, setPhoneNo] = useState(shippingInfo.phoneNo || user?.phoneNo || '')
+    const [country, setCountry] = useState(shippingInfo.country || user?.country || countriesList[0]?.name || '')
     let navigate = useNavigate();
     const submitHandler = (e) => {
         e.preventDefault()

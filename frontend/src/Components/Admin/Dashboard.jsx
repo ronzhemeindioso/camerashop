@@ -10,7 +10,7 @@ import { errMsg } from '../../Utils/helpers';
 import 'react-toastify/dist/ReactToastify.css';
 import ProductSalesChart from './ProductSalesChart';
 import UserSalesChart from './UserSalesChart';
-import MonthlySalesChart from './MonthlySalesChart';
+import SalesChart from './SalesChart';
 
 const Dashboard = () => {
     const [products, setProducts] = useState([])
@@ -142,8 +142,7 @@ const Dashboard = () => {
                                 <div className="adm-card-body"><UserSalesChart /></div>
                             </div>
                             <div className="adm-card adm-chart-wide">
-                                <div className="adm-card-head"><h2>Monthly sales</h2></div>
-                                <div className="adm-card-body"><MonthlySalesChart /></div>
+                                <SalesChart />
                             </div>
                         </div>
                     </div>

@@ -1,46 +1,32 @@
 import React from 'react'
 import { Link } from 'react-router-dom'
+import { useSelector } from 'react-redux'
 
 const Footer = () => {
+    const { isAuthenticated } = useSelector(state => state.auth)
+
     return (
         <footer className="site-footer">
-            <div className="footer-grid">
-                <div className="footer-brand">
-                    <span className="brand-icon"><i className="fa fa-camera" aria-hidden="true"></i></span>
-                    <div>
-                        <strong>Aperture</strong>
-                        <p>Camera gear, lenses and accessories with a simple, dependable checkout.</p>
-                    </div>
+            <div className="footer-inner">
+                <div className="footer-brand-simple">
+                    <strong>Aperture</strong>
+                    <span>Camera gear, made simple.</span>
                 </div>
 
-                <div>
-                    <h6>Shop</h6>
-                    <ul>
-                        <li><Link to="/shop">All products</Link></li>
-                        <li><Link to="/cart">Your cart</Link></li>
-                    </ul>
-                </div>
-
-                <div>
-                    <h6>Account</h6>
-                    <ul>
-                        <li><Link to="/login">Log in</Link></li>
-                        <li><Link to="/orders/me">Your orders</Link></li>
-                        <li><Link to="/me">Profile</Link></li>
-                    </ul>
-                </div>
-
-                <div>
-                    <h6>Help</h6>
-                    <ul>
-                        <li><Link to="/#about">About us</Link></li>
-                        <li><Link to="/#contact">Contact us</Link></li>
-                        <li>support@aperture.com</li>
-                    </ul>
-                </div>
+                <nav className="footer-links" aria-label="Footer">
+                    <Link to="/shop">Shop</Link>
+                    {isAuthenticated
+                        ? <Link to="/orders/me">Your orders</Link>
+                        : <Link to="/login">Log in</Link>}
+                    <Link to="/#about">About</Link>
+                    <Link to="/#contact">Contact</Link>
+                </nav>
             </div>
 
-            <p className="footer-copy">&copy; {new Date().getFullYear()} Aperture. All rights reserved.</p>
+            <div className="footer-bottom">
+                <span>&copy; {new Date().getFullYear()} Aperture. All rights reserved.</span>
+                <a href="mailto:support@aperture.com">support@aperture.com</a>
+            </div>
         </footer>
     )
 }

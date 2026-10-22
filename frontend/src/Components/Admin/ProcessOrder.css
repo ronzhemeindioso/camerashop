@@ -1,0 +1,324 @@
+/* Process order page - uses the admin theme variables from admin.css */
+
+.admin-page {
+  --po-subtle: #65527a;   /* muted text that still reads clearly on white */
+}
+
+.po-page-actions { display: flex; flex-wrap: wrap; gap: 0.6rem; }
+
+.po-head {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.9rem 1.25rem;
+  margin-bottom: 1.5rem;
+}
+
+.po-id { display: inline-flex; align-items: center; gap: 0.5rem; }
+.po-id-value { font-size: 1.35rem; color: var(--adm-text); }
+.po-label { color: var(--po-subtle); font-size: 0.95rem; }
+.po-muted { color: var(--po-subtle); font-size: 0.95rem; }
+
+.po-copy {
+  border: 1px solid var(--adm-border);
+  background: #fff;
+  color: var(--adm-accent);
+  border-radius: 8px;
+  width: 30px;
+  height: 30px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  margin-left: 0.4rem;
+  flex: 0 0 auto;
+  text-decoration: none;
+}
+.po-copy:hover { background: var(--adm-accent-soft); }
+.po-copy:focus-visible { outline: 2px solid var(--adm-accent); outline-offset: 2px; }
+
+/* ---- layout: customer + payment (left) | status + items (right) ---- */
+.po-grid {
+  display: grid;
+  grid-template-columns: 380px minmax(0, 1fr);
+  gap: 1.75rem;
+  align-items: start;
+}
+
+.po-info,
+.po-main {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+/* only stick when the screen is tall enough to show the whole column */
+@media (min-height: 900px) and (min-width: 992px) {
+  .po-info { position: sticky; top: 5.5rem; }
+}
+
+.po-card {
+  background: var(--adm-card);
+  border: 1px solid var(--adm-border);
+  border-radius: 18px;
+  padding: 1.5rem 1.75rem;
+  color: var(--adm-text);
+}
+
+.po-card-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  margin: 0 0 1rem;
+  color: var(--adm-text);
+}
+
+/* neutral so purple stays reserved for the main action */
+.po-count {
+  display: inline-block;
+  margin-left: 0.4rem;
+  padding: 0.05rem 0.55rem;
+  border-radius: 999px;
+  background: #f0ecf3;
+  color: var(--po-subtle);
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+/* ---- items table ---- */
+.po-table-wrap { overflow-x: auto; }
+
+.po-table { width: 100%; border-collapse: collapse; }
+.po-table th {
+  text-align: left;
+  font-size: 0.88rem;
+  color: var(--po-subtle);
+  font-weight: 600;
+  padding: 0.6rem 0.75rem;
+  border-bottom: 1px solid var(--adm-border);
+  white-space: nowrap;
+}
+.po-table td {
+  padding: 0.9rem 0.75rem;
+  border-bottom: 1px solid var(--adm-border);
+  vertical-align: middle;
+}
+.po-table tbody tr:last-child td { border-bottom: 0; }
+.po-table .num { text-align: right; white-space: nowrap; }
+.po-strong { font-weight: 700; }
+
+.po-product { display: flex; align-items: center; gap: 0.9rem; min-width: 220px; }
+.po-product img {
+  width: 56px;
+  height: 56px;
+  object-fit: cover;
+  border-radius: 10px;
+  border: 1px solid var(--adm-border);
+  background: #faf5fc;
+  flex: 0 0 auto;
+}
+.po-product-info { display: flex; flex-direction: column; gap: 0.15rem; min-width: 0; }
+.po-product a { color: var(--adm-text); font-weight: 600; text-decoration: none; }
+.po-product a:hover { color: var(--adm-accent); text-decoration: underline; }
+
+.po-stock { font-size: 0.85rem; color: var(--po-subtle); }
+.po-stock.bad { color: #b3262e; font-weight: 600; }
+
+/* ---- totals ---- */
+.po-totals {
+  margin: 1rem 0 0 auto;
+  max-width: 340px;
+  border-top: 1px solid var(--adm-border);
+  padding-top: 1rem;
+}
+.po-totals > div { display: flex; justify-content: space-between; gap: 1.5rem; padding: 0.3rem 0; }
+.po-totals dt { font-weight: 400; color: var(--po-subtle); margin: 0; }
+.po-totals dd { margin: 0; font-variant-numeric: tabular-nums; }
+.po-totals .po-grand {
+  margin-top: 0.5rem;
+  padding-top: 0.8rem;
+  border-top: 1px solid var(--adm-border);
+  font-size: 1.15rem;
+  font-weight: 800;
+}
+.po-totals .po-grand dt { color: var(--adm-text); font-weight: 800; }
+.po-totals .po-grand dd { color: var(--adm-text); }
+
+/* ---- status stepper ---- */
+.po-steps {
+  --po-fill: 0;
+  --po-n: 3;
+  list-style: none;
+  margin: 0 auto;
+  padding: 0;
+  max-width: calc(var(--po-n) * 187px);
+  display: flex;
+  justify-content: space-between;
+  position: relative;
+}
+/* the line runs from the middle of the first dot to the middle of the last (each step is 1/n wide) */
+.po-steps::before,
+.po-steps::after {
+  content: '';
+  position: absolute;
+  top: 14px;
+  left: calc(50% / var(--po-n));
+  height: 2px;
+}
+.po-steps::before { right: calc(50% / var(--po-n)); background: var(--adm-border); }
+.po-steps::after {
+  width: calc((100% - 100% / var(--po-n)) * var(--po-fill));
+  background: #1b7a4b;
+  transition: width 0.4s ease;
+}
+.po-steps li {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.3rem;
+  flex: 1;
+  font-size: 0.9rem;
+  color: var(--po-subtle);
+}
+.po-dot {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #fff;
+  border: 2px solid var(--adm-border);
+  font-weight: 700;
+  font-size: 0.85rem;
+}
+.po-steps li.done .po-dot { background: #1b7a4b; border-color: #1b7a4b; color: #fff; }
+.po-steps li.current .po-dot { background: #98620a; border-color: #98620a; color: #fff; }
+.po-steps li.done, .po-steps li.current { color: var(--adm-text); font-weight: 600; }
+.po-step-time { font-size: 0.8rem; font-weight: 400; color: var(--po-subtle); text-align: center; }
+
+.po-tracking {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 1.25rem 0 0;
+}
+
+/* ---- next-step action in the header row, top right ---- */
+.po-head-actions {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+.po-head-warn { flex: 1 1 100%; margin: 0; }
+.po-select { width: 190px; max-width: 100%; }
+.po-tracking-input { width: 260px; max-width: 100%; }
+.po-update { justify-content: center; white-space: nowrap; }
+.po-update:disabled { opacity: 0.55; cursor: not-allowed; }
+
+.po-warn {
+  display: flex;
+  gap: 0.5rem;
+  align-items: flex-start;
+  margin: 0 0 0.9rem;
+  padding: 0.65rem 0.9rem;
+  border-radius: 10px;
+  background: #fbe4e4;
+  color: #8f1d24;
+  font-size: 0.9rem;
+}
+
+.po-locked-inline {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 1.25rem 0 0;
+  background: #e8f5e9;
+  border: 1px solid #a5d6a7;
+  color: #1b5e20;
+  border-radius: 10px;
+  padding: 0.55rem 0.9rem;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+/* stepper + tracking sit at the top of the order card, above the items */
+.po-progress {
+  padding-bottom: 1.5rem;
+  margin-bottom: 1.5rem;
+  border-bottom: 1px solid var(--adm-border);
+}
+
+/* ---- sections inside the customer card ---- */
+.po-section + .po-section {
+  margin-top: 1.25rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--adm-border);
+}
+.po-sub {
+  margin: 0 0 0.75rem;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--adm-text);
+}
+
+/* ---- label / value lists ---- */
+.po-kv { margin: 0; display: grid; grid-template-columns: 90px minmax(0, 1fr); gap: 0.65rem 1rem; }
+.po-kv dt { color: var(--po-subtle); font-weight: 500; font-size: 0.9rem; margin: 0; }
+.po-kv dd { margin: 0; word-break: break-word; }
+.po-kv a:not(.po-copy) { color: var(--adm-accent); text-decoration: none; }
+.po-kv a:not(.po-copy):hover { text-decoration: underline; }
+.po-kv .po-full { grid-column: 1 / -1; }
+.po-kv dt.po-full { margin-bottom: -0.35rem; }
+.po-copyline { display: flex; align-items: center; gap: 0.5rem; }
+.po-copyline .po-copy { margin-left: 0; }
+.po-copyline.po-top { align-items: flex-start; justify-content: space-between; }
+.po-break { word-break: break-all; min-width: 0; }
+.po-paid-amount { margin-left: 0.6rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+
+.po-print-title { display: none; }
+
+/* ---- small screens ---- */
+@media (max-width: 991px) {
+  .po-grid { grid-template-columns: 1fr; }
+  .po-info { order: 2; }
+  .po-main { order: 1; }
+  .po-head-actions { margin-left: 0; width: 100%; }
+  .po-tracking-input { flex: 1 1 200px; width: auto; }
+  .po-select { flex: 1 1 auto; width: auto; }
+}
+
+/* items turn into stacked rows so price, qty and subtotal are not squeezed */
+@media (max-width: 640px) {
+  .po-card { padding: 1.25rem 1.1rem; }
+  .po-table thead { display: none; }
+  .po-table, .po-table tbody, .po-table tr, .po-table td { display: block; }
+  .po-table tr { padding: 0.9rem 0; border-bottom: 1px solid var(--adm-border); }
+  .po-table tbody tr:last-child { border-bottom: 0; }
+  .po-table td { border: 0; padding: 0.2rem 0; }
+  .po-table td[data-label] { display: flex; justify-content: space-between; text-align: right; }
+  .po-table td[data-label]::before { content: attr(data-label); color: var(--po-subtle); }
+  .po-product { min-width: 0; }
+  .po-totals { max-width: none; }
+  .po-step-time { font-size: 0.72rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .po-steps::after { transition: none; }
+}
+
+/* ---- print: packing slip (no prices, payment or buttons) ---- */
+@media print {
+  body.admin-mode, .admin-page { background: #fff !important; }
+  .adm-topbar, .adm-page-head, .po-no-print, .po-money { display: none !important; }
+  .po-print-title { display: block; font-size: 1.2rem; font-weight: 700; margin: 0 0 1rem; }
+  .po-grid { grid-template-columns: 1fr; }
+  .po-card { border: 1px solid #999; break-inside: avoid; }
+  .po-info { order: 1; position: static; }
+  .po-main { order: 2; }
+}

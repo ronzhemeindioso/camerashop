@@ -4,6 +4,9 @@ import AdminLayout from './AdminLayout'
 
 import { useParams, useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
+import { useForm } from 'react-hook-form'
+import { yupResolver } from '@hookform/resolvers/yup'
+import { productSchema, PRODUCT_CATEGORIES, imageFileError } from '../../validation/schemas'
 import 'react-toastify/dist/ReactToastify.css'
 import axios from 'axios';
 // import { getToken } from '../../Utils/helpers';
@@ -12,19 +15,19 @@ import { updateProduct, getProductDetails, clearErrors } from '../../actions/pro
 import { UPDATE_PRODUCT_RESET } from '../../constants/productConstants'
 
 
+const FieldError = ({ error }) => error ? <div className="invalid-feedback">{error.message}</div> : null
+
 const UpdateProduct = () => {
     const dispatch = useDispatch()
     const { error, product } = useSelector(state => state.productDetails);
     const { loading, error: updateError, isUpdated } = useSelector(state => state.product);
 
     // console.log(product)
-    const [name, setName] = useState('');
-    const [price, setPrice] = useState(0);
-    const [costPrice, setCostPrice] = useState(0);
-    const [description, setDescription] = useState('');
-    const [category, setCategory] = useState('');
-    const [stock, setStock] = useState(0);
-    const [seller, setSeller] = useState('');
+    const { register, handleSubmit, reset, formState: { errors } } = useForm({
+        resolver: yupResolver(productSchema),
+        defaultValues: { name: '', price: '', costPrice: '', description: '', category: '', stock: '', seller: '' },
+    })
+    const [fetchedCost, setFetchedCost] = useState('')
     const [images, setImages] = useState([]);
     const [oldImages, setOldImages] = useState([]);
     const [imagesPreview, setImagesPreview] = useState([])
@@ -34,16 +37,7 @@ const UpdateProduct = () => {
     // const [updateError, setUpdateError] = useState('')
     // const [isUpdated, setIsUpdated] = useState(false)
 
-    const categories = [
-        'Cameras',
-        'Lenses',
-        'Tripods & Stabilizers',
-        'Lighting',
-        'Memory Cards',
-        'Bags & Cases',
-        'Batteries & Chargers',
-        'Accessories'
-    ]
+    const categories = PRODUCT_CATEGORIES
     let { id } = useParams();
     let navigate = useNavigate();
 
@@ -86,7 +80,7 @@ const UpdateProduct = () => {
     // Cost price is admin-only data, so it comes from the protected admin endpoint
     useEffect(() => {
         axios.get(`${import.meta.env.VITE_API}/admin/product/${id}`, { withCredentials: true })
-            .then(({ data }) => setCostPrice(data.product.costPrice ?? 0))
+            .then(({ data }) => setFetchedCost(data.product.costPrice ?? 0))
             .catch(() => { })
     }, [id])
 
@@ -100,12 +94,6 @@ const UpdateProduct = () => {
         if (product && product._id !== id) {
             dispatch(getProductDetails(id))
         } else {
-            setName(product.name);
-            setPrice(product.price);
-            setDescription(product.description);
-            setCategory(product.category);
-            setSeller(product.seller);
-            setStock(product.stock)
             setOldImages(product.images)
         }
         if (error) {
@@ -126,21 +114,28 @@ const UpdateProduct = () => {
         }
     }, [error, updateError, product, id, isUpdated])
 
-    const submitHandler = (e) => {
-        e.preventDefault();
-        if (Number(price) <= Number(costPrice)) {
-            toast.error('Sell price must be higher than cost price', { position: 'bottom-right' });
-            return;
-        }
+    useEffect(() => {
+        if (!product || product._id !== id) return
+        reset({
+            name: product.name ?? '',
+            price: product.price ?? '',
+            costPrice: fetchedCost,
+            description: product.description ?? '',
+            category: product.category ?? '',
+            stock: product.stock ?? '',
+            seller: product.seller ?? '',
+        })
+    }, [product, id, fetchedCost, reset])
 
+    const submitHandler = (values) => {
         const formData = new FormData();
-        formData.set('name', name);
-        formData.set('price', price);
-        formData.set('costPrice', costPrice);
-        formData.set('description', description);
-        formData.set('category', category);
-        formData.set('stock', stock);
-        formData.set('seller', seller);
+        formData.set('name', values.name.trim());
+        formData.set('price', values.price);
+        formData.set('costPrice', values.costPrice);
+        formData.set('description', values.description.trim());
+        formData.set('category', values.category);
+        formData.set('stock', values.stock);
+        formData.set('seller', values.seller.trim());
         // tell the server which existing images to keep (the rest are deleted)
         formData.set('keepImages', JSON.stringify((oldImages || []).map(img => img.public_id)));
         images.forEach(image => {
@@ -149,7 +144,11 @@ const UpdateProduct = () => {
         dispatch(updateProduct(product._id, formData))
     }
     const onChange = e => {
-        const files = Array.from(e.target.files)
+        const files = Array.from(e.target.files).filter(file => {
+            const problem = imageFileError(file)
+            if (problem) toast.error(problem, { position: 'bottom-right' })
+            return !problem
+        })
         files.forEach(file => {
             const reader = new FileReader();
             reader.onload = () => {
@@ -178,7 +177,7 @@ const UpdateProduct = () => {
             <AdminLayout>
                     <>
                         <div className="wrapper my-5">
-                            <form className="shadow-lg" onSubmit={submitHandler} encType='multipart/form-data'>
+                            <form className="shadow-lg" onSubmit={handleSubmit(submitHandler)} encType='multipart/form-data' noValidate>
                                 <div className="adm-form-head">
                                     <h2>Edit product</h2>
                                     <p>Update the details of this product</p>
@@ -188,63 +187,65 @@ const UpdateProduct = () => {
                                     <input
                                         type="text"
                                         id="name_field"
-                                        className="form-control"
-                                        value={name}
-                                        onChange={(e) => setName(e.target.value)}
+                                        className={`form-control ${errors.name ? 'is-invalid' : ''}`}
+                                        {...register('name')}
                                     />
+                                    <FieldError error={errors.name} />
                                 </div>
                                 <div className="form-group">
                                     <label htmlFor="price_field">Sell Price</label>
                                     <input
                                         type="text"
                                         id="price_field"
-                                        className="form-control"
-                                        value={price}
-                                        onChange={(e) => setPrice(e.target.value)}
+                                        className={`form-control ${errors.price ? 'is-invalid' : ''}`}
+                                        {...register('price')}
                                     />
+                                    <FieldError error={errors.price} />
                                 </div>
                                 <div className="form-group">
                                     <label htmlFor="cost_price_field">Cost Price</label>
                                     <input
                                         type="text"
                                         id="cost_price_field"
-                                        className="form-control"
-                                        value={costPrice}
-                                        onChange={(e) => setCostPrice(e.target.value)}
+                                        className={`form-control ${errors.costPrice ? 'is-invalid' : ''}`}
+                                        {...register('costPrice')}
                                     />
+                                    <FieldError error={errors.costPrice} />
                                 </div>
 
                                 <div className="form-group">
                                     <label htmlFor="description_field">Description</label>
-                                    <textarea className="form-control" id="description_field" rows="8" value={description} onChange={(e) => setDescription(e.target.value)}></textarea>
+                                    <textarea className={`form-control ${errors.description ? 'is-invalid' : ''}`} id="description_field" rows="8" {...register('description')}></textarea>
+                                    <FieldError error={errors.description} />
                                 </div>
                                 <div className="form-group">
                                     <label htmlFor="category_field">Category</label>
-                                    <select className="form-control" id="category_field" value={category} onChange={(e) => setCategory(e.target.value)}>
-                                        {(category && !categories.includes(category) ? [category, ...categories] : categories).map(category => (
+                                    <select className={`form-control ${errors.category ? 'is-invalid' : ''}`} id="category_field" {...register('category')}>
+                                        {(product?.category && !categories.includes(product.category) ? [product.category, ...categories] : categories).map(category => (
                                             <option key={category} value={category} >{category}</option>
                                         ))}
                                     </select>
+                                    <FieldError error={errors.category} />
                                 </div>
                                 <div className="form-group">
                                     <label htmlFor="stock_field">Stock</label>
                                     <input
                                         type="number"
                                         id="stock_field"
-                                        className="form-control"
-                                        value={stock}
-                                        onChange={(e) => setStock(e.target.value)}
+                                        className={`form-control ${errors.stock ? 'is-invalid' : ''}`}
+                                        {...register('stock')}
                                     />
+                                    <FieldError error={errors.stock} />
                                 </div>
                                 <div className="form-group">
                                     <label htmlFor="seller_field">Seller Name</label>
                                     <input
                                         type="text"
                                         id="seller_field"
-                                        className="form-control"
-                                        value={seller}
-                                        onChange={(e) => setSeller(e.target.value)}
+                                        className={`form-control ${errors.seller ? 'is-invalid' : ''}`}
+                                        {...register('seller')}
                                     />
+                                    <FieldError error={errors.seller} />
                                 </div>
                                 <div className='form-group'>
                                     <label>Images</label>

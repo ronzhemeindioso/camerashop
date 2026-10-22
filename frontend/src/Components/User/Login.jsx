@@ -11,20 +11,23 @@ import { useDispatch, useSelector } from 'react-redux'
 import './Login.css'
 import { login, socialLogin, clearErrors } from '../../actions/userActions'
 import { googleProvider, facebookProvider } from '../../firebase'
+import { useForm } from 'react-hook-form'
+import { yupResolver } from '@hookform/resolvers/yup'
+import { loginSchema } from '../../validation/schemas'
 
 const Login = () => {
     const { isAuthenticated, error, loading, user } = useSelector(state => state.auth)
-    const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
+    const { register, handleSubmit, formState: { errors } } = useForm({
+        resolver: yupResolver(loginSchema),
+        defaultValues: { email: '', password: '' },
+    })
     // const [loading, setLoading] = useState(false)
     let navigate = useNavigate()
     let location = useLocation()
     const dispatch = useDispatch()
 
-    const submitHandler = (e) => {
-        e.preventDefault();
-        // login(email, password)
-        dispatch(login(email, password))
+    const submitHandler = ({ email, password }) => {
+        dispatch(login(email.trim(), password))
     }
 
     // const login = async (email, password) => {
@@ -108,31 +111,33 @@ const Login = () => {
 
                             {/* Right: form */}
                             <section className="login-form-wrap">
-                                <form onSubmit={submitHandler} className="login-form">
+                                <form onSubmit={handleSubmit(submitHandler)} className="login-form" noValidate>
                                     <h1>SIGN IN</h1>
 
-                                    <div className="login-field">
+                                    <div className={`login-field ${errors.email ? 'has-error' : ''}`}>
                                         <label htmlFor="email_field">Email</label>
                                         <i className="fa fa-envelope-o" aria-hidden="true"></i>
                                         <input
                                             type="email"
                                             id="email_field"
-                                            value={email}
-                                            onChange={(e) => setEmail(e.target.value)}
+                                            {...register('email')}
                                             autoComplete="email"
+                                            aria-invalid={!!errors.email}
                                         />
+                                        {errors.email && <span className="login-error" role="alert">{errors.email.message}</span>}
                                     </div>
 
-                                    <div className="login-field">
+                                    <div className={`login-field ${errors.password ? 'has-error' : ''}`}>
                                         <label htmlFor="password_field">Password</label>
                                         <i className="fa fa-lock" aria-hidden="true"></i>
                                         <input
                                             type="password"
                                             id="password_field"
-                                            value={password}
-                                            onChange={(e) => setPassword(e.target.value)}
+                                            {...register('password')}
                                             autoComplete="current-password"
+                                            aria-invalid={!!errors.password}
                                         />
+                                        {errors.password && <span className="login-error" role="alert">{errors.password.message}</span>}
                                     </div>
 
                                     <div className="login-row">

@@ -376,3 +376,16 @@ body.forgot-mode .login-page {
   align-items: flex-start;
   padding-top: 9rem;   /* smaller = higher, larger = lower */
 }
+/* validation */
+.login-field.has-error input { border-color: #d32f2f; }
+.login-field.has-error input:focus { box-shadow: 0 0 0 3px rgba(211, 47, 47, 0.15); }
+.login-error {
+  position: absolute;
+  top: 100%;
+  left: 4px;
+  margin-top: 3px;
+  line-height: 1.2;
+  font-size: 0.76rem;
+  font-weight: 600;
+  color: #d32f2f;
+}

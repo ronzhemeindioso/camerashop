@@ -1,4 +1,7 @@
 import React, { useState } from 'react'
+import { useForm } from 'react-hook-form'
+import { yupResolver } from '@hookform/resolvers/yup'
+import { newUserSchema } from '../../validation/schemas'
 import { useNavigate } from 'react-router-dom'
 import axios from 'axios'
 import { toast } from 'react-toastify'
@@ -6,21 +9,22 @@ import { toast } from 'react-toastify'
 import MetaData from '../Layout/MetaData'
 import AdminLayout from './AdminLayout'
 
+const FieldError = ({ error }) => error ? <div className="invalid-feedback">{error.message}</div> : null
+
 const NewUser = () => {
     const navigate = useNavigate()
-    const [name, setName] = useState('')
-    const [email, setEmail] = useState('')
-    const [password, setPassword] = useState('')
-    const [role, setRole] = useState('user')
+    const { register, handleSubmit, formState: { errors } } = useForm({
+        resolver: yupResolver(newUserSchema),
+        defaultValues: { name: '', email: '', password: '', role: 'user' },
+    })
     const [saving, setSaving] = useState(false)
 
-    const submitHandler = async (e) => {
-        e.preventDefault()
+    const submitHandler = async ({ name, email, password, role }) => {
         setSaving(true)
         try {
             await axios.post(
                 `${import.meta.env.VITE_API}/admin/user/new`,
-                { name, email, password, role },
+                { name: name.trim(), email: email.trim(), password, role },
                 { withCredentials: true }
             )
             toast.success('User created successfully', { position: 'bottom-right' })
@@ -39,7 +43,7 @@ const NewUser = () => {
             <AdminLayout>
                 <div className="wrapper my-5">
                     <div>
-                        <form className="shadow-lg" onSubmit={submitHandler}>
+                        <form className="shadow-lg" onSubmit={handleSubmit(submitHandler)} noValidate>
                             <div className="adm-form-head" style={{ marginBottom: '1.25rem' }}>
                                 <h2>Add user</h2>
                                 <p>Create a new customer or admin account</p>
@@ -48,31 +52,35 @@ const NewUser = () => {
                             <div style={row}>
                                 <div className="form-group">
                                     <label htmlFor="name_field">Name</label>
-                                    <input type="text" id="name_field" className="form-control"
-                                        value={name} onChange={(e) => setName(e.target.value)} required />
+                                    <input type="text" id="name_field" className={`form-control ${errors.name ? 'is-invalid' : ''}`}
+                                        {...register('name')} />
+                                    <FieldError error={errors.name} />
                                 </div>
 
                                 <div className="form-group">
                                     <label htmlFor="email_field">Email</label>
-                                    <input type="email" id="email_field" className="form-control"
-                                        value={email} onChange={(e) => setEmail(e.target.value)} required />
+                                    <input type="email" id="email_field" className={`form-control ${errors.email ? 'is-invalid' : ''}`}
+                                        {...register('email')} />
+                                    <FieldError error={errors.email} />
                                 </div>
                             </div>
 
                             <div style={row}>
                                 <div className="form-group">
                                     <label htmlFor="password_field">Password</label>
-                                    <input type="password" id="password_field" className="form-control"
-                                        value={password} onChange={(e) => setPassword(e.target.value)} minLength={6} required />
+                                    <input type="password" id="password_field" className={`form-control ${errors.password ? 'is-invalid' : ''}`}
+                                        {...register('password')} autoComplete="new-password" />
+                                    <FieldError error={errors.password} />
                                 </div>
 
                                 <div className="form-group">
                                     <label htmlFor="role_field">Role</label>
-                                    <select id="role_field" className="form-control"
-                                        value={role} onChange={(e) => setRole(e.target.value)}>
+                                    <select id="role_field" className={`form-control ${errors.role ? 'is-invalid' : ''}`}
+                                        {...register('role')}>
                                         <option value="user">user</option>
                                         <option value="admin">admin</option>
                                     </select>
+                                    <FieldError error={errors.role} />
                                 </div>
                             </div>
 

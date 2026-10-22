@@ -1,0 +1,169 @@
+/* ===== Edit Profile page (extra styles on top of Profile.css) ===== */
+
+.profile-page label.profile-field { cursor: text; }
+
+.profile-page .profile-field input,
+.profile-page .profile-field select {
+  display: block;
+  width: 100%;
+  height: 40px;
+  margin-top: 5px;
+  padding: 0 12px;
+  border: 1.5px solid var(--pf-border);
+  border-radius: 8px;
+  background: #fff;
+  font: inherit;
+  font-size: 0.88rem;
+  font-weight: 500;
+  color: var(--pf-text);
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.profile-page .profile-field input::placeholder { color: #8f7fa0; font-weight: 500; }
+.profile-page .profile-field input:focus,
+.profile-page .profile-field select:focus {
+  outline: none;
+  border-color: var(--pf-purple);
+  box-shadow: 0 0 0 3px rgba(126, 61, 132, 0.15);
+}
+
+.profile-page .profile-error {
+  display: block;
+  margin-top: 4px;
+  font-size: 0.74rem;
+  font-style: normal;
+  color: #c0392b;
+}
+
+/* clickable avatar with a camera badge */
+.profile-page .profile-avatar-edit { cursor: pointer; font: inherit; }
+.profile-avatar-badge {
+  position: absolute;
+  right: -2px;
+  bottom: -2px;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 3px solid #fff;
+  border-radius: 50%;
+  background: var(--pf-purple);
+  color: #fff;
+  font-size: 0.75rem;
+  transition: background 0.2s;
+}
+.profile-page .profile-avatar-edit:hover .profile-avatar-badge { background: var(--pf-purple-dark); }
+.profile-page .profile-avatar-edit:focus-visible {
+  outline: 3px solid rgba(126, 61, 132, 0.35);
+  outline-offset: 3px;
+}
+
+.profile-page .profile-link-btn {
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--pf-purple);
+  cursor: pointer;
+}
+.profile-page .profile-link-btn:hover { color: var(--pf-purple-dark); }
+
+
+/* ===== Layout: narrower, focused form ===== */
+.profile-wrap.pu-wrap { max-width: 720px; gap: 12px; }
+.pu-top { display: flex; flex-direction: column; gap: 6px; }
+.profile-page .pu-back,
+.profile-page .pu-back:hover {
+  align-self: flex-start;
+  display: inline-flex; align-items: center; gap: 8px;
+  font-size: 0.82rem; font-weight: 700; color: var(--pf-purple);
+}
+.profile-page .pu-back:hover { color: var(--pf-purple-dark); }
+.pu-title { margin: 0; font-size: 1.5rem; font-weight: 700; letter-spacing: 0; word-spacing: 0.12em; color: var(--pf-text); }
+
+/* ===== Photo header ===== */
+.pu-photo {
+  display: flex; align-items: center; gap: 18px;
+  margin-bottom: 1.3rem; padding-bottom: 1.3rem;
+  border-bottom: 1px solid var(--pf-border);
+}
+.profile-page .pu-avatar { position: relative; width: 88px; height: 88px; overflow: visible; padding: 0; }
+.pu-avatar img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
+.pu-photo-info { flex: 1; min-width: 0; }
+.pu-photo-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
+.pu-since { font-size: 0.82rem; color: var(--pf-muted); }
+.profile-page .pu-photo-info .pu-hint { margin: 6px 0 0; }
+.profile-page .pu-photo-btn {
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 8px 16px; border: 1.5px solid var(--pf-border); border-radius: 999px;
+  background: #fff; font: inherit; font-size: 0.8rem; font-weight: 700;
+  color: var(--pf-purple); cursor: pointer; white-space: nowrap;
+  transition: background 0.2s, border-color 0.2s;
+}
+.profile-page .pu-photo-btn:hover { background: #faf5fc; border-color: var(--pf-purple); }
+
+/* ===== Fields: readable labels, hints, error state ===== */
+.pu-card .profile-field span {
+  font-size: 0.8rem; font-weight: 600; letter-spacing: 0;
+  text-transform: none; color: var(--pf-muted);
+}
+.pu-hint { display: block; margin-top: 5px; font-size: 0.74rem; color: var(--pf-muted); }
+.profile-page .profile-field.has-error input,
+.profile-page .profile-field.has-error select,
+.profile-page .profile-field.has-error .pu-phone { border-color: #c0392b; }
+.profile-page .profile-field.has-error input:focus { box-shadow: 0 0 0 3px rgba(192, 57, 43, 0.15); }
+
+/* phone with fixed +63 prefix */
+.pu-phone {
+  display: flex; align-items: stretch; margin-top: 5px;
+  border: 1.5px solid var(--pf-border); border-radius: 8px; background: #fff; overflow: hidden;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.pu-phone:focus-within { border-color: var(--pf-purple); box-shadow: 0 0 0 3px rgba(126, 61, 132, 0.15); }
+.pu-card .profile-field .pu-phone-prefix {
+  display: flex; align-items: center; justify-content: center;
+  padding: 0 12px; margin: 0;
+  background: #faf5fc; border-right: 1.5px solid var(--pf-border);
+  font-size: 0.88rem; font-weight: 700; line-height: 1;
+  letter-spacing: 0; text-transform: none; color: var(--pf-purple);
+}
+.profile-page .pu-phone input {
+  margin: 0; border: 0; border-radius: 0; box-shadow: none; flex: 1; min-width: 0;
+}
+.profile-page .pu-phone input:focus { border: 0; box-shadow: none; }
+
+/* ===== Footer inside the card (sticks to the bottom of the screen while scrolling) ===== */
+.pu-footer {
+  position: sticky; bottom: 0; z-index: 5;
+  display: flex; align-items: center; justify-content: flex-end; gap: 12px;
+  margin: 1.6rem -1.7rem -1.4rem; padding: 14px 1.7rem;
+  background: rgba(255, 255, 255, 0.96);
+  -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
+  border-top: 1px solid var(--pf-border);
+  border-radius: 0 0 16px 16px;
+}
+.pu-footer-note { margin-right: auto; font-size: 0.8rem; color: var(--pf-muted); }
+.profile-page .pu-footer .profile-btn:disabled {
+  opacity: 0.45; cursor: not-allowed; box-shadow: none;
+}
+
+@media (max-width: 640px) {
+  .pu-photo { flex-wrap: wrap; }
+  .profile-page .pu-photo-btn { width: 100%; justify-content: center; }
+  .pu-footer { margin: 1.4rem -1.1rem -1.4rem; padding: 12px 1.1rem; }
+  .pu-footer-note { display: none; }
+  .profile-page .pu-footer .profile-btn { flex: 1; width: auto; }
+}
+
+/* the edit page has no footer, so Save / Cancel are the last thing on the page */
+body.hide-footer .site-footer,
+body.hide-footer footer { display: none; }
+
+/* ===== Set up profile (step 2 after registering) ===== */
+.pu-top .pu-step { align-self: flex-start; margin-bottom: 2px; }
+.pu-sub { margin: 2px 0 6px; max-width: 560px; font-size: 0.9rem; line-height: 1.5; color: var(--pf-muted); }
+.pu-photo-title { font-size: 1rem; color: var(--pf-text); }
+.profile-page .pu-photo-info .pu-hint { margin-top: 2px; }
+.pu-note { margin: 4px 0 0; text-align: center; font-size: 0.82rem; color: var(--pf-muted); }
+.profile-page .pu-note a { color: var(--pf-purple); font-weight: 700; }

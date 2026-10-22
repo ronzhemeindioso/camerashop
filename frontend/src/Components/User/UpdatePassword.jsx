@@ -1,87 +1,46 @@
 import React, { useState, useEffect } from 'react'
-import { useNavigate } from "react-router-dom";
-import MetaData from '../Layout/MetaData';
-import { toast } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
-import axios from 'axios';
-// import { getToken } from '../../Utils/helpers'
+import { Link, useNavigate } from 'react-router-dom'
+import { toast } from 'react-toastify'
+import 'react-toastify/dist/ReactToastify.css'
 import { useDispatch, useSelector } from 'react-redux'
+
+import MetaData from '../Layout/MetaData'
 import { updatePassword, clearErrors } from '../../actions/userActions'
 import { UPDATE_PASSWORD_RESET } from '../../constants/userConstants'
-
-
-
+import './Login.css'
 
 const UpdatePassword = () => {
     const dispatch = useDispatch()
+    const navigate = useNavigate()
     const { error, isUpdated, loading } = useSelector(state => state.user)
-
 
     const [oldPassword, setOldPassword] = useState('')
     const [password, setPassword] = useState('')
-    // const [error, setError] = useState('')
-    // const [isUpdated, setIsUpdated] = useState(false)
-    // const [loading, setLoading] = useState(false)
-    let navigate = useNavigate();
 
-    // const updatePassword = async (formData) => {
-    //     console.log(formData)
-    //     try {
-    //         const config = {
-    //             headers: {
-    //                 'Content-Type': 'application/json',
-    //                 'Authorization': `Bearer ${getToken()}`
-
-    //             }
-    //         }
-
-    //         const { data } = await axios.put(`${import.meta.env.VITE_API}/password/update`, formData, config)
-    //         setIsUpdated(data.success)
-    //         setLoading(false)
-    //         toast.success('password updated', {
-    //             position: 'bottom-right'
-    //         });
-    //         navigate('/me')
-
-
-    //     } catch (error) {
-    //         setError(error.response.data.message)
-
-    //     }
-    // }
-
-    // useEffect(() => {
-
-    //     if (error) {
-    //         toast.error(error, {
-    //             position: 'bottom-right'
-    //         });
-    //     }
-
-
-    // }, [error,])
+    // Same minimal layout as Forgot Password: lavender page, single card, no top menu or footer (see Login.css)
+    useEffect(() => {
+        document.body.classList.add('login-mode', 'forgot-mode')
+        return () => document.body.classList.remove('login-mode', 'forgot-mode')
+    }, [])
 
     useEffect(() => {
         if (error) {
-            console.log(error)
-            dispatch(clearErrors());
+            toast.error(error, { position: 'bottom-right' })
+            dispatch(clearErrors())
         }
         if (isUpdated) {
+            toast.success('Password updated', { position: 'bottom-right' })
             navigate('/me')
-            dispatch({
-                type: UPDATE_PASSWORD_RESET
-            })
+            dispatch({ type: UPDATE_PASSWORD_RESET })
         }
     }, [dispatch, error, navigate, isUpdated])
 
-
-
     const submitHandler = (e) => {
-        e.preventDefault();
+        e.preventDefault()
 
-        const formData = new FormData();
-        formData.set('oldPassword', oldPassword);
-        formData.set('password', password);
+        const formData = new FormData()
+        formData.set('oldPassword', oldPassword)
+        formData.set('password', password)
 
         dispatch(updatePassword(formData))
     }
@@ -90,37 +49,57 @@ const UpdatePassword = () => {
         <>
             <MetaData title={'Change Password'} />
 
-            <div className="row wrapper">
-                <div className="col-10 col-lg-5">
-                    <form className="shadow-lg" onSubmit={submitHandler} >
-                        <h1 className="mt-2 mb-5">Update Password</h1>
-                        <div className="form-group">
-                            <label htmlFor="old_password_field">Old Password</label>
-                            <input
-                                type="password"
-                                id="old_password_field"
-                                className="form-control"
-                                value={oldPassword}
-                                onChange={(e) => setOldPassword(e.target.value)}
-                            />
-                        </div>
+            <div className="login-page">
+                <div className="login-card login-card-single">
+                    <section className="login-form-wrap">
+                        <form onSubmit={submitHandler} className="login-form">
+                            <h1>UPDATE PASSWORD</h1>
+                            <p className="login-hint">
+                                Enter your current password, then choose a new one (at least 6 characters).
+                            </p>
 
-                        <div className="form-group">
-                            <label htmlFor="new_password_field">New Password</label>
-                            <input
-                                type="password"
-                                id="new_password_field"
-                                className="form-control"
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                            />
-                        </div>
+                            <div className="login-field">
+                                <label htmlFor="old_password_field">Old password</label>
+                                <i className="fa fa-lock" aria-hidden="true"></i>
+                                <input
+                                    type="password"
+                                    id="old_password_field"
+                                    value={oldPassword}
+                                    onChange={(e) => setOldPassword(e.target.value)}
+                                    autoComplete="current-password"
+                                    required
+                                />
+                            </div>
 
-                        <button type="submit" className="btn update-btn btn-block mt-4 mb-3" disabled={loading ? true : false} >Update Password</button>
-                    </form>
+                            <div className="login-field">
+                                <label htmlFor="new_password_field">New password</label>
+                                <i className="fa fa-key" aria-hidden="true"></i>
+                                <input
+                                    type="password"
+                                    id="new_password_field"
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
+                                    autoComplete="new-password"
+                                    minLength={6}
+                                    required
+                                />
+                            </div>
+
+                            <button
+                                id="update_password_button"
+                                type="submit"
+                                className="login-submit"
+                                disabled={loading ? true : false}>
+                                {loading ? 'UPDATING...' : 'UPDATE PASSWORD'}
+                            </button>
+
+                            <p className="login-back">
+                                <Link to="/me">&larr; Back to profile</Link>
+                            </p>
+                        </form>
+                    </section>
                 </div>
             </div>
-
         </>
     )
 }

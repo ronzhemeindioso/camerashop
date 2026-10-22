@@ -93,6 +93,20 @@ const orderSchema = mongoose.Schema({
     deliveredAt: {
         type: Date
     },
+    // optional courier tracking number, entered when the order is marked as shipped
+    trackingNumber: {
+        type: String,
+        trim: true,
+        maxLength: [100, 'Tracking number cannot exceed 100 characters']
+    },
+    // when each status was reached (shown under the progress steps on the admin order page)
+    statusHistory: [
+        {
+            _id: false,
+            status: { type: String, required: true },
+            at: { type: Date, default: Date.now }
+        }
+    ],
     // true once the ordered quantities have been taken out of stock (so it only happens once)
     stockDeducted: {
         type: Boolean,

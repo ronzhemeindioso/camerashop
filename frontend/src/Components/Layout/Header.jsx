@@ -1,5 +1,5 @@
-import React, { useState } from 'react'
-import { Link, useLocation } from 'react-router-dom'
+import React, { useState, useEffect, useRef } from 'react'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { useDispatch, useSelector } from 'react-redux'
@@ -13,12 +13,40 @@ const navLinks = [
     { to: '/#contact', hash: '#contact', label: 'Contact' },
 ]
 
+const ANNOUNCE_KEY = 'announceDismissed'
+
 const Header = () => {
     const dispatch = useDispatch();
+    const navigate = useNavigate();
     const { pathname, hash } = useLocation();
     const { user } = useSelector(state => state.auth)
     const { cartItems } = useSelector(state => state.cart)
     const [open, setOpen] = useState(false)
+
+    // Account menu is controlled by React (no Bootstrap/jQuery dropdown), so nothing
+    // outside React touches this part of the DOM and it can't go stale after logout
+    const [menuOpen, setMenuOpen] = useState(false)
+    const menuRef = useRef(null)
+
+    useEffect(() => { setMenuOpen(false) }, [pathname])
+
+    useEffect(() => {
+        if (!menuOpen) return
+        const onOutside = (e) => {
+            if (menuRef.current && !menuRef.current.contains(e.target)) setMenuOpen(false)
+        }
+        document.addEventListener('pointerdown', onOutside)
+        return () => document.removeEventListener('pointerdown', onOutside)
+    }, [menuOpen])
+
+    // the top announcement stays until the visitor closes it, then it never shows again on this browser
+    const [showAnnounce, setShowAnnounce] = useState(() => {
+        try { return localStorage.getItem(ANNOUNCE_KEY) !== '1' } catch (e) { return true }
+    })
+    const dismissAnnounce = () => {
+        setShowAnnounce(false)
+        try { localStorage.setItem(ANNOUNCE_KEY, '1') } catch (e) { /* storage blocked: it just comes back next visit */ }
+    }
 
     const closeMenu = () => setOpen(false)
 
@@ -30,16 +58,32 @@ const Header = () => {
             ? pathname === '/shop'
             : pathname === '/' && hash === link.hash
 
-    const logoutHandler = () => {
-        dispatch(logout());
+    // highlight the account menu while the user is on one of their account pages
+    const onAccountPage = pathname === '/me' || pathname.startsWith('/me/')
+        || pathname.startsWith('/orders/') || pathname.startsWith('/order/')
+        || pathname === '/password/update'
+
+    const logoutHandler = async () => {
+        closeMenu();
+        setMenuOpen(false);
+        // wait until the session is cleared, then go to the login page
+        await dispatch(logout());
         toast.success('log out', {
             position: 'bottom-right'
         });
+        navigate('/login');
     }
 
     return (
         <>
-        <div className="announce-bar">Secure checkout on every order</div>
+        {showAnnounce && (
+            <div className="announce-bar">
+                <span>Secure checkout on every order</span>
+                <button type="button" className="announce-close" aria-label="Dismiss announcement" onClick={dismissAnnounce}>
+                    <i className="fa fa-times" aria-hidden="true"></i>
+                </button>
+            </div>
+        )}
         <header className="site-header">
             <div className="site-nav">
                 <Link to="/" className="brand" onClick={closeMenu}>
@@ -76,8 +120,9 @@ const Header = () => {
 
                     <div className="nav-actions">
                         {user ? (
-                            <div className="dropdown">
-                                <Link to="#!" className="user-toggle dropdown-toggle" id="dropDownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                            <div className="dropdown" key="user-menu" ref={menuRef}>
+                                <a href="#!" className={`user-toggle dropdown-toggle ${onAccountPage ? 'active' : ''}`} id="dropDownMenuButton" aria-haspopup="true" aria-expanded={menuOpen}
+                                    onClick={(e) => { e.preventDefault(); setMenuOpen(o => !o) }}>
                                     <figure className="avatar avatar-nav">
                                         <img
                                             src={user.avatar && user.avatar.url}
@@ -86,21 +131,28 @@ const Header = () => {
                                         />
                                     </figure>
                                     <span className="user-name">{user.name}</span>
-                                </Link>
+                                </a>
 
-                                <div className="dropdown-menu dropdown-menu-right" aria-labelledby="dropDownMenuButton">
+                                <div className={`dropdown-menu dropdown-menu-right ${menuOpen ? 'show' : ''}`} aria-labelledby="dropDownMenuButton">
                                     {user.role === 'admin' && (
-                                        <Link className="dropdown-item" to="/dashboard">Dashboard</Link>
+                                        <Link className="dropdown-item" to="/dashboard">
+                                            <i className="fa fa-tachometer" aria-hidden="true"></i>Dashboard
+                                        </Link>
                                     )}
-                                    <Link className="dropdown-item" to="/orders/me">Orders</Link>
-                                    <Link className="dropdown-item" to="/me">Profile</Link>
-                                    <Link className="dropdown-item text-danger" to="/" onClick={logoutHandler}>
-                                        Logout
+                                    <Link className="dropdown-item" to="/me">
+                                        <i className="fa fa-user" aria-hidden="true"></i>My profile
                                     </Link>
+                                    <Link className="dropdown-item" to="/orders/me">
+                                        <i className="fa fa-shopping-bag" aria-hidden="true"></i>My orders
+                                    </Link>
+                                    <div className="dropdown-divider"></div>
+                                    <button type="button" className="dropdown-item text-danger" onClick={logoutHandler}>
+                                        <i className="fa fa-sign-out" aria-hidden="true"></i>Sign out
+                                    </button>
                                 </div>
                             </div>
                         ) : (
-                            <div className="auth-links">
+                            <div className="auth-links" key="auth-links">
                                 <Link to="/login" className="auth-login" id="login_btn" onClick={closeMenu}>Login</Link>
                                 <Link to="/register" className="auth-signup" onClick={closeMenu}>Sign Up</Link>
                             </div>

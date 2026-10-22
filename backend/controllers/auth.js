@@ -13,34 +13,63 @@ const sendToken = require('../utils/jwtToken');
        })
    }
 
-exports.registerUser = async (req, res, next) => {
-    console.log(req.body)
-    const result = await cloudinary.v2.uploader.upload(req.body.avatar, {
-        folder: 'avatars',
-        width: 150,
-        crop: "scale"
-    }, (err, res) => {
-        console.log(err, res);
-    });
-    const { name, email, password, } = req.body;
-    const user = await User.create({
-        name,
-        email,
-        password,
-        avatar: {
-            public_id: result.public_id,
-            url: result.secure_url
-        },
-    })
-    //test token
-    const token = user.getJwtToken();
+// A simple purple avatar with the user's first letter - used when nobody uploads a photo
+const defaultAvatar = (name = '') => {
+    const first = String(name).trim().charAt(0).toUpperCase()
+    const letter = /^[A-Z0-9]$/.test(first) ? first : '?'
+    const svg =
+        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 150 150">' +
+        '<rect width="150" height="150" fill="#7e3d84"/>' +
+        '<text x="50%" y="50%" dy=".35em" text-anchor="middle" font-family="Arial, sans-serif" font-size="72" font-weight="700" fill="#ffffff">' +
+        letter + '</text></svg>'
+    return {
+        public_id: 'default_avatar',
+        url: 'data:image/svg+xml;base64,' + Buffer.from(svg).toString('base64')
+    }
+}
 
-    return res.status(201).json({
-        success: true,
-        user,
-        token
-    })
-    // sendToken(user, 200, res)
+// Register: name, email and password are enough. The avatar is optional (set it later in "Set up your profile").
+exports.registerUser = async (req, res, next) => {
+    try {
+        const { name, email, password, avatar } = req.body || {}
+
+        if (!name || !email || !password) {
+            return res.status(400).json({ success: false, message: 'Please enter your name, email and password' })
+        }
+
+        let avatarData = defaultAvatar(name)
+        if (avatar) {
+            const result = await cloudinary.v2.uploader.upload(avatar, {
+                folder: 'avatars',
+                width: 150,
+                crop: 'scale'
+            })
+            avatarData = { public_id: result.public_id, url: result.secure_url }
+        }
+
+        const user = await User.create({ name, email, password, avatar: avatarData })
+        const token = user.getJwtToken()
+
+        // never send the password hash back to the browser
+        const safeUser = user.toObject()
+        delete safeUser.password
+
+        return res.status(201).json({
+            success: true,
+            user: safeUser,
+            token
+        })
+    } catch (error) {
+        if (error.code === 11000) {
+            return res.status(400).json({ success: false, message: 'This email is already registered' })
+        }
+        if (error.name === 'ValidationError') {
+            const message = Object.values(error.errors).map(e => e.message).join(', ')
+            return res.status(400).json({ success: false, message })
+        }
+        console.log(error)
+        return res.status(500).json({ success: false, message: 'Could not create your account. Please try again.' })
+    }
 }
 
 exports.loginUser = async (req, res, next) => {
@@ -189,43 +218,63 @@ exports.getUserProfile = async (req, res, next) => {
     })
 }
 
+// Update my profile. Every field is optional - only the ones that are sent get changed.
+// name, email, phoneNo, address (house no. & street), barangay, city, province, postalCode, country, avatar (base64 image)
 exports.updateProfile = async (req, res, next) => {
+    try {
+        const body = req.body || {}
+        const newUserData = {}
 
-    const newUserData = {
-        name: req.body.name,
-        email: req.body.email
-    }
+        // name / email can be changed but never blanked
+        if (body.name && String(body.name).trim()) newUserData.name = String(body.name).trim()
+        if (body.email && String(body.email).trim()) newUserData.email = String(body.email).trim()
 
-    // Update avatar
-    if (req.body.avatar !== '') {
-        let user = await User.findById(req.user.id)
-        // console.log(user)
-        const image_id = user.avatar.public_id;
-        const res = await cloudinary.v2.uploader.destroy(image_id);
-        // console.log("Res", res)
-        const result = await cloudinary.v2.uploader.upload(req.body.avatar, {
-            folder: 'avatars',
-            width: 150,
-            crop: "scale"
-        })
-
-        newUserData.avatar = {
-            public_id: result.public_id,
-            url: result.secure_url
+        // optional details (an empty string clears them)
+        for (const field of ['phoneNo', 'address', 'barangay', 'city', 'province', 'postalCode', 'country']) {
+            if (body[field] !== undefined) newUserData[field] = body[field]
         }
-    }
-    const user = await User.findByIdAndUpdate(req.user.id, newUserData, {
-        new: true,
-        runValidators: true,
-    })
-    if (!user) {
-        return res.status(401).json({ message: 'User Not Updated' })
-    }
 
-    return res.status(200).json({
-        success: true,
-        user
-    })
+        // new avatar photo
+        if (body.avatar) {
+            const current = await User.findById(req.user.id)
+            // the generated letter avatar is not stored on Cloudinary, so there is nothing to remove
+            if (current && current.avatar && current.avatar.public_id && current.avatar.public_id !== 'default_avatar') {
+                try { await cloudinary.v2.uploader.destroy(current.avatar.public_id) } catch (e) { console.log(e) }
+            }
+            const result = await cloudinary.v2.uploader.upload(body.avatar, {
+                folder: 'avatars',
+                width: 150,
+                crop: 'scale'
+            })
+            newUserData.avatar = {
+                public_id: result.public_id,
+                url: result.secure_url
+            }
+        }
+
+        const user = await User.findByIdAndUpdate(req.user.id, newUserData, {
+            new: true,
+            runValidators: true,
+        })
+        if (!user) {
+            return res.status(401).json({ message: 'User Not Updated' })
+        }
+
+        return res.status(200).json({
+            success: true,
+            user
+        })
+    } catch (error) {
+        if (error.code === 11000) {
+            return res.status(400).json({ success: false, message: 'That email is already used by another account' })
+        }
+        if (error.name === 'ValidationError') {
+            const message = Object.values(error.errors).map(e => e.message).join(', ')
+            return res.status(400).json({ success: false, message })
+        }
+        console.log(error)
+        return res.status(500).json({ success: false, message: 'Could not update your profile' })
+    }
 }
 
 exports.updatePassword = async (req, res, next) => {
