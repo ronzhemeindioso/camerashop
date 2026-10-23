@@ -3,6 +3,7 @@ const Product = require('../models/product');
 const User = require('../models/user');
 const sendEmail = require('../utils/sendEmail');
 const { buildOrderEmailHtml, buildReceiptPdf } = require('../utils/orderReceipt');
+const { roundMoney, findVoucherByCode, calculateDiscount, getVoucherError, claimVoucher, releaseVoucher } = require('./voucher');
 
 
 
@@ -15,11 +16,12 @@ exports.newOrder = async (req, res, next) => {
         taxPrice,
         shippingPrice,
         totalPrice,
-        paymentInfo
+        paymentInfo,
+        voucherCode
 
     } = req.body;
 
-    const order = await Order.create({
+    const orderData = {
         orderItems,
         shippingInfo,
         itemsPrice,
@@ -30,7 +32,67 @@ exports.newOrder = async (req, res, next) => {
         paidAt: Date.now(),
         statusHistory: [{ status: 'Processing', at: Date.now() }],
         user: req.user._id
-    })
+    }
+
+    // Voucher: the discount is worked out here from the real product prices, never from the browser's numbers
+    let claim = null
+    if (voucherCode) {
+        if (!Array.isArray(orderItems) || orderItems.length === 0) {
+            return res.status(400).json({ message: 'Your cart is empty' })
+        }
+        const products = await Product.find({ _id: { $in: orderItems.map(item => item.product) } }).select('price')
+        const priceById = new Map(products.map(p => [String(p._id), p.price]))
+
+        let serverItemsPrice = 0
+        const pricedItems = []
+        for (const item of orderItems) {
+            const price = priceById.get(String(item.product))
+            const quantity = Number(item.quantity)
+            if (price === undefined) {
+                return res.status(400).json({ message: `"${item.name}" is no longer available` })
+            }
+            if (!Number.isInteger(quantity) || quantity < 1) {
+                return res.status(400).json({ message: 'Invalid item quantity' })
+            }
+            serverItemsPrice += price * quantity
+            pricedItems.push({ ...item, price })
+        }
+        serverItemsPrice = roundMoney(serverItemsPrice)
+
+        const voucher = await findVoucherByCode(voucherCode)
+        const problem = getVoucherError(voucher, req.user._id, serverItemsPrice)
+        if (problem) {
+            return res.status(400).json({ message: problem })
+        }
+
+        claim = await claimVoucher(voucher, req.user._id)
+        if (!claim) {
+            return res.status(400).json({ message: 'This voucher can no longer be used' })
+        }
+
+        const discount = calculateDiscount(voucher, serverItemsPrice)
+        orderData.orderItems = pricedItems
+        orderData.itemsPrice = serverItemsPrice
+        orderData.discountPrice = discount
+        orderData.voucher = {
+            code: voucher.code,
+            discountType: voucher.discountType,
+            discountValue: voucher.discountValue
+        }
+        orderData.totalPrice = roundMoney(Math.max(0, serverItemsPrice + Number(shippingPrice || 0) + Number(taxPrice || 0) - discount))
+    }
+
+    let order
+    try {
+        order = await Order.create(orderData)
+    } catch (error) {
+        // the order wasn't saved, so give the voucher use back
+        if (claim) await releaseVoucher(claim, req.user._id)
+        throw error
+    }
+
+    // confirmation email (status: Processing) - not awaited so checkout stays fast; it never throws
+    emailOrderUpdate(order)
 
     res.status(200).json({
         success: true,
@@ -106,7 +168,18 @@ exports.deleteOrder = async (req, res, next) => {
     })
 }
 
-const STATUS_FLOW = ['Processing', 'Shipped', 'Delivered']
+const ALL_STATUSES = ['Processing', 'Shipped', 'Delivered', 'Returned', 'Refunded']
+
+// Where an order can go from each status (the admin page uses the same map). Refunded is final.
+const NEXT_STATUS = {
+    Processing: ['Shipped', 'Delivered'],
+    Shipped: ['Delivered'],
+    Delivered: ['Returned', 'Refunded'],
+    Returned: ['Refunded'],
+    Refunded: []
+}
+
+const peso = (n) => `\u20B1${Number(n || 0).toFixed(2)}`
 
 // Emails the customer the updated order (items, subtotals, grand total) with a PDF receipt attached.
 // Never throws - a mail problem must not undo a status change that was already saved.
@@ -116,11 +189,11 @@ const emailOrderUpdate = async (order) => {
         if (!customer || !customer.email) {
             return { sent: false, reason: 'Customer has no email address' }
         }
-        const pdf = await buildReceiptPdf(order, customer.name)
+        const pdf = await buildReceiptPdf(order, customer.name, customer.email)
         await sendEmail({
             email: customer.email,
             subject: `Your order #${order._id} is now ${order.orderStatus}`,
-            message: `Your order #${order._id} is now ${order.orderStatus}. Grand total: $${Number(order.totalPrice).toFixed(2)}. Your receipt is attached.`,
+            message: `Your order #${order._id} is now ${order.orderStatus}. Grand total: ${peso(order.totalPrice)}. Your receipt is attached.`,
             html: buildOrderEmailHtml(order, customer.name),
             attachments: [{
                 filename: `receipt-${order._id}.pdf`,
@@ -135,14 +208,14 @@ const emailOrderUpdate = async (order) => {
     }
 }
 
-// Admin updates the status of an order  =>  PUT /api/v1/admin/order/:id   body: { status }
+// Admin updates the status of an order  =>  PUT /api/v1/admin/order/:id   body: { status, trackingNumber? }
 exports.updateOrder = async (req, res, next) => {
     const { status, trackingNumber } = req.body || {}
 
-    if (!STATUS_FLOW.includes(status)) {
+    if (!ALL_STATUSES.includes(status)) {
         return res.status(400).json({
             success: false,
-            message: `Status must be one of: ${STATUS_FLOW.join(', ')}`
+            message: `Status must be one of: ${ALL_STATUSES.join(', ')}`
         })
     }
 
@@ -154,24 +227,29 @@ exports.updateOrder = async (req, res, next) => {
         })
     }
 
-    if (order.orderStatus === 'Delivered') {
-        return res.status(400).json({
-            success: false,
-            message: 'You have already delivered this order'
-        })
-    }
-
     const previousStatus = order.orderStatus
 
-    if (STATUS_FLOW.indexOf(status) < STATUS_FLOW.indexOf(order.orderStatus)) {
+    if (previousStatus === 'Refunded') {
         return res.status(400).json({
             success: false,
-            message: `This order is already ${order.orderStatus}, it cannot go back to ${status}`
+            message: 'This order has been refunded and is locked'
+        })
+    }
+    if (status === previousStatus) {
+        return res.status(400).json({
+            success: false,
+            message: `This order is already ${previousStatus}`
+        })
+    }
+    if (!(NEXT_STATUS[previousStatus] || []).includes(status)) {
+        return res.status(400).json({
+            success: false,
+            message: `A ${previousStatus} order cannot be changed to ${status}`
         })
     }
 
     // The first time the order leaves "Processing", take the items out of stock - only once.
-    if (status !== 'Processing' && !order.stockDeducted) {
+    if ((status === 'Shipped' || status === 'Delivered') && !order.stockDeducted) {
         // 1) make sure there is enough stock for every item before touching anything
         for (const item of order.orderItems) {
             const product = await Product.findById(item.product)
@@ -189,9 +267,15 @@ exports.updateOrder = async (req, res, next) => {
         order.stockDeducted = true
     }
 
-    if (status !== order.orderStatus) {
-        order.statusHistory.push({ status, at: Date.now() })
+    // A return puts the items back into stock (only if they had been taken out)
+    if (status === 'Returned' && order.stockDeducted) {
+        for (const item of order.orderItems) {
+            await Product.updateOne({ _id: item.product }, { $inc: { stock: item.quantity } })
+        }
+        order.stockDeducted = false
     }
+
+    order.statusHistory.push({ status, at: Date.now() })
     if (status === 'Shipped' && typeof trackingNumber === 'string' && trackingNumber.trim()) {
         order.trackingNumber = trackingNumber.trim().slice(0, 100)
     }
@@ -202,8 +286,8 @@ exports.updateOrder = async (req, res, next) => {
     }
     await order.save()
 
-    // let the customer know (only when the status actually changed)
-    const email = status !== previousStatus ? await emailOrderUpdate(order) : { sent: false, reason: 'Status unchanged' }
+    // let the customer know about every status change
+    const email = await emailOrderUpdate(order)
 
     return res.status(200).json({
         success: true,

@@ -45,6 +45,7 @@ import TrashUsers from './Components/Admin/TrashUsers'
 import NewUser from './Components/Admin/NewUser'
 import SalesReport from './Components/Admin/SalesChart'
 import SetupProfile from './Components/User/SetupProfile';
+import VouchersList from './Components/Admin/VouchersList';
 function App() {
   const dispatch = useDispatch()
 
@@ -250,6 +251,14 @@ function App() {
                 <ProductReviews />
               </ProtectedRoute>} />
           <Route
+            path="/admin/vouchers"
+            element={
+              <ProtectedRoute isAdmin={true}>
+                <VouchersList />
+              </ProtectedRoute>
+            }
+          />
+          <Route
             path="/admin/sales"
             element={
               <ProtectedRoute isAdmin={true}>
@@ -261,7 +270,7 @@ function App() {
         <Footer />
       </Router>
 
-      <ToastContainer />
+      <ToastContainer position="bottom-right" />
     </>
   )
 }

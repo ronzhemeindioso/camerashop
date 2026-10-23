@@ -33,6 +33,10 @@ const Sidebar = () => {
                     </li>
 
                     <li>
+                        <Link to="/admin/vouchers"><i className="fa fa-ticket"></i> Vouchers</Link>
+                    </li>
+
+                    <li>
                         <Link to="/admin/reviews"><i className="fa fa-star"></i> Reviews</Link>
                     </li>
 

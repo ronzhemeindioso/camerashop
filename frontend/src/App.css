@@ -1569,3 +1569,74 @@ a:hover { color: #652f6b; }
 
 .dropdown-menu .dropdown-item i { width: 20px; margin-right: 8px; text-align: center; color: #7e3d84; }
 .dropdown-menu .dropdown-item.text-danger i { color: inherit; }
+
+/* ---------- Voucher box (confirm order page) ---------- */
+.voucher-box {
+    margin: 0.25rem 0;
+}
+
+.voucher-label {
+    font-weight: 600;
+    margin-bottom: 0.4rem;
+}
+
+.voucher-input-row {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.voucher-input-row .form-control {
+    text-transform: uppercase;
+}
+
+.voucher-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    margin-top: 0.75rem;
+}
+
+.voucher-chip {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.75rem;
+    width: 100%;
+    padding: 0.45rem 0.7rem;
+    border: 1px dashed #b9a3c6;
+    border-radius: 8px;
+    background: #faf6fc;
+    text-align: left;
+    cursor: pointer;
+}
+
+.voucher-chip:hover:not(:disabled) {
+    background: #f1e7f7;
+}
+
+.voucher-chip span {
+    font-size: 0.85rem;
+    color: #6b7280;
+}
+
+.voucher-applied {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.55rem 0.8rem;
+    border-radius: 8px;
+    background: #e3f5ec;
+    color: #1b7a4b;
+}
+
+.voucher-remove {
+    border: none;
+    background: transparent;
+    color: #b3262e;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.voucher-discount-line .order-summary-values {
+    color: #1b7a4b;
+}

@@ -2,7 +2,9 @@ const PDFDocument = require('pdfkit');
 
 const STORE_NAME = () => process.env.SMTP_FROM_NAME || 'ShopIT'
 
-const money = (n) => `$${Number(n || 0).toFixed(2)}`
+// HTML email can show the peso sign; the PDF's built-in Helvetica font has no peso glyph, so the PDF uses "PHP"
+const money = (n) => `\u20B1${Number(n || 0).toFixed(2)}`
+const pdfMoney = (n) => `PHP ${Number(n || 0).toFixed(2)}`
 const escapeHtml = (s = '') => String(s)
     .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;').replace(/'/g, '&#39;')
@@ -92,6 +94,7 @@ exports.buildOrderEmailHtml = (order, customerName) => {
                 ${itemRows}
                 <tr><td colspan="2" style="padding:0;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0">
                     ${smallRow('Items subtotal', money(order.itemsPrice))}
+                    ${order.discountPrice > 0 ? smallRow(`Voucher${order.voucher && order.voucher.code ? ' (' + order.voucher.code + ')' : ''}`, '-' + money(order.discountPrice)) : ''}
                     ${smallRow('Shipping', money(order.shippingPrice))}
                     ${smallRow('Tax', money(order.taxPrice))}
                 </table></td></tr>
@@ -117,98 +120,131 @@ exports.buildOrderEmailHtml = (order, customerName) => {
 }
 
 // ---------- PDF receipt (resolves with a Buffer) ----------
-exports.buildReceiptPdf = (order, customerName) => new Promise((resolve, reject) => {
-    const doc = new PDFDocument({ size: 'A4', margin: 0 })
+// Simple, formal layout in the store theme:
+//   header (store + order details)  ->  Billed to / Payment  ->  items table  ->  totals
+exports.buildReceiptPdf = (order, customerName, customerEmail) => new Promise((resolve, reject) => {
+    const doc = new PDFDocument({ size: 'A4', margin: 0, info: { Title: `Receipt - Order ${order._id}`, Author: STORE_NAME() } })
     const chunks = []
     doc.on('data', c => chunks.push(c))
     doc.on('end', () => resolve(Buffer.concat(chunks)))
     doc.on('error', reject)
 
     const W = doc.page.width, H = doc.page.height
-    const left = 50, right = W - 50
-    const colQty = 320, colPrice = 380, colSub = 465
-    const colW = { name: colQty - left - 16, qty: 50, price: 80, sub: right - colSub }
-
-    const footer = () => {
-        doc.moveTo(left, H - 55).lineTo(right, H - 55).lineWidth(1).strokeColor(C.main).stroke()
-        doc.fillColor(C.muted).font('Helvetica').fontSize(8)
-            .text('Thank you for your purchase. This receipt was generated automatically.', left, H - 42, { width: right - left, align: 'center', lineBreak: false })
-    }
-
-    // header
-    doc.rect(0, 0, W, 10).fill(C.main)
-    doc.fillColor(C.dark).font('Helvetica-Bold').fontSize(22).text(STORE_NAME(), left, 50, { lineBreak: false })
-    doc.font('Helvetica').fontSize(9).fillColor(C.main).text('OFFICIAL RECEIPT', left, 78, { characterSpacing: 1.5, lineBreak: false })
-    doc.fillColor(C.text).fontSize(9)
-        .text(`Order No.: ${order._id}`, 300, 52, { width: right - 300, align: 'right', lineBreak: false })
-        .text(`Date: ${fmtDate(order.paidAt || order.createdAt)}`, 300, 66, { width: right - 300, align: 'right', lineBreak: false })
-        .text(`Status: ${order.orderStatus}`, 300, 80, { width: right - 300, align: 'right', lineBreak: false })
-    doc.moveTo(left, 100).lineTo(right, 100).lineWidth(1.5).strokeColor(C.rule).stroke()
-
-    // billing / payment
+    const L = 50, R = W - 50
+    const X2 = 330                                   // right-hand column
+    const colQty = 330, colPrice = 380, colSub = 465
+    const nameW = colQty - L - 24
     const s = order.shippingInfo || {}
     const pay = order.paymentInfo || {}
-    const y0 = 120
-    doc.fillColor(C.main).font('Helvetica-Bold').fontSize(8)
-        .text('BILLED TO', left, y0, { characterSpacing: 1, lineBreak: false })
-        .text('PAYMENT', 320, y0, { characterSpacing: 1, lineBreak: false })
-    doc.fillColor(C.text).font('Helvetica-Bold').fontSize(10).text(customerName || '-', left, y0 + 16, { width: 230 })
-    doc.font('Helvetica').fontSize(10)
-        .text(`${s.address || ''}`, left, doc.y + 2, { width: 230 })
-        .text(`${s.city || ''} ${s.postalCode || ''}, ${s.country || ''}`, left, doc.y, { width: 230 })
-        .text(`Phone: ${s.phoneNo || '-'}`, left, doc.y, { width: 230 })
-    const leftBottom = doc.y
-    doc.font('Helvetica').fontSize(10)
-        .text(`Status: ${pay.status || '-'}`, 320, y0 + 16, { width: right - 320 })
-        .text(`Reference: ${pay.id || '-'}`, 320, doc.y + 2, { width: right - 320 })
-    if (order.trackingNumber) doc.text(`Tracking: ${order.trackingNumber}`, 320, doc.y + 2, { width: right - 320 })
+    const paid = pay.status === 'succeeded'
+    const orderNo = String(order._id).slice(-8).toUpperCase()
+    const payText = order.orderStatus === 'Refunded' ? 'Refunded' : (paid ? 'Paid' : 'Unpaid')
 
-    // items table
-    let y = Math.max(leftBottom, doc.y) + 26
-    const drawTableHeader = (yy) => {
-        doc.rect(left, yy, right - left, 22).fill(C.dark)
-        doc.fillColor('#ffffff').font('Helvetica-Bold').fontSize(9)
-        doc.text('Item', left + 8, yy + 7, { width: colW.name, lineBreak: false })
-        doc.text('Qty', colQty, yy + 7, { width: colW.qty, align: 'center', lineBreak: false })
-        doc.text('Price', colPrice, yy + 7, { width: colW.price, align: 'right', lineBreak: false })
-        doc.text('Subtotal', colSub, yy + 7, { width: colW.sub - 8, align: 'right', lineBreak: false })
-        return yy + 28
+    const heading = (text, x, y) => doc.fillColor(C.main).font('Helvetica-Bold').fontSize(8.5)
+        .text(text.toUpperCase(), x, y, { characterSpacing: 1, lineBreak: false })
+    // plain text line, returns next y
+    const line = (text, x, y, w, opts = {}) => {
+        doc.fillColor(opts.color || C.text).font(opts.bold ? 'Helvetica-Bold' : 'Helvetica').fontSize(10)
+        const h = doc.heightOfString(String(text), { width: w })
+        doc.text(String(text), x, y, { width: w })
+        return y + h + 4
     }
-    y = drawTableHeader(y)
+    // "Label   value" row, returns next y
+    const row = (name, value, x, y, w, labelW, bold = false) => {
+        doc.fillColor(C.muted).font('Helvetica').fontSize(10).text(name, x, y, { width: labelW, lineBreak: false })
+        doc.fillColor(C.text).font(bold ? 'Helvetica-Bold' : 'Helvetica').fontSize(10)
+        const h = doc.heightOfString(String(value), { width: w - labelW })
+        doc.text(String(value), x + labelW, y, { width: w - labelW })
+        return y + Math.max(h, 12) + 4
+    }
+
+    const footer = () => {
+        doc.moveTo(L, H - 60).lineTo(R, H - 60).lineWidth(0.5).strokeColor(C.line).stroke()
+        doc.fillColor(C.muted).font('Helvetica').fontSize(8)
+            .text(`${STORE_NAME()}  |  Thank you for your purchase. This receipt was generated automatically.`, L, H - 46, { width: R - L, align: 'center', lineBreak: false })
+    }
+
+    // ----- header: store name left, order details right -----
+    doc.rect(0, 0, W, 10).fill(C.main)
+    doc.fillColor(C.dark).font('Helvetica-Bold').fontSize(22).text(STORE_NAME(), L, 46, { width: X2 - L - 10, lineBreak: false, ellipsis: true })
+    doc.fillColor(C.main).font('Helvetica').fontSize(9)
+        .text('OFFICIAL RECEIPT', L, 76, { characterSpacing: 2, lineBreak: false })
+    const meta = [['Order No.', `#${orderNo}`], ['Date', fmtDate(order.paidAt || order.createdAt)], ['Status', order.orderStatus]]
+    meta.forEach(([k, v], i) => {
+        const yy = 46 + i * 15
+        doc.fillColor(C.muted).font('Helvetica').fontSize(9.5).text(k, 330, yy, { width: 70, lineBreak: false })
+        doc.fillColor(C.dark).font('Helvetica-Bold').fontSize(9.5).text(v, 400, yy, { width: R - 400, align: 'right', lineBreak: false })
+    })
+    doc.moveTo(L, 104).lineTo(R, 104).lineWidth(1.5).strokeColor(C.rule).stroke()
+
+    // ----- left: billed to + delivery address | right: payment -----
+    const top = 124
+    const lw = X2 - L - 30
+    heading('Billed to', L, top)
+    let yL = top + 18
+    yL = line(customerName || '-', L, yL, lw, { bold: true })
+    if (customerEmail) yL = line(customerEmail, L, yL, lw)
+    yL = line(`Phone: ${s.phoneNo || '-'}`, L, yL, lw)
+
+    yL += 10
+    heading('Delivery address', L, yL)
+    yL += 18
+    yL = line(s.address || '-', L, yL, lw)
+    yL = line(`${s.city || ''}, ${s.postalCode || ''}`, L, yL, lw)
+    yL = line(s.country || '-', L, yL, lw)
+    if (order.trackingNumber) yL = line(`Tracking no.: ${order.trackingNumber}`, L, yL + 2, lw)
+
+    heading('Payment', X2, top)
+    let yR = top + 18
+    yR = row('Status', payText, X2, yR, R - X2, 62, true)
+    if (order.paidAt) yR = row('Paid on', fmtDate(order.paidAt), X2, yR, R - X2, 62)
+    yR = row('Reference', pay.id || '-', X2, yR, R - X2, 62)
+
+    // ----- items table -----
+    let y = Math.max(yL, yR) + 22
+    const tableHeader = (yy) => {
+        doc.rect(L, yy, R - L, 24).fill(C.dark)
+        doc.fillColor('#ffffff').font('Helvetica-Bold').fontSize(9)
+        doc.text('Item', L + 10, yy + 8, { width: nameW, lineBreak: false })
+        doc.text('Qty', colQty, yy + 8, { width: 40, align: 'center', lineBreak: false })
+        doc.text('Price', colPrice, yy + 8, { width: 75, align: 'right', lineBreak: false })
+        doc.text('Subtotal', colSub, yy + 8, { width: R - colSub - 10, align: 'right', lineBreak: false })
+        return yy + 34
+    }
+    y = tableHeader(y)
 
     for (const item of order.orderItems) {
         doc.font('Helvetica').fontSize(10)
-        const nameH = doc.heightOfString(item.name, { width: colW.name })
-        const rowH = Math.max(nameH, 12) + 14
-        if (y + rowH > H - 190) {
+        const rowH = Math.max(doc.heightOfString(item.name, { width: nameW }), 12) + 16
+        if (y + rowH > H - 85) {            // no room left on this page: continue on a new page
             footer(); doc.addPage()
-            y = drawTableHeader(50)
+            y = tableHeader(50)
         }
         doc.fillColor(C.text).font('Helvetica').fontSize(10)
-        doc.text(item.name, left + 8, y, { width: colW.name })
-        doc.text(String(item.quantity), colQty, y, { width: colW.qty, align: 'center', lineBreak: false })
-        doc.text(money(item.price), colPrice, y, { width: colW.price, align: 'right', lineBreak: false })
-        doc.text(money(lineTotal(item)), colSub, y, { width: colW.sub - 8, align: 'right', lineBreak: false })
+        doc.text(item.name, L + 10, y, { width: nameW })
+        doc.text(String(item.quantity), colQty, y, { width: 40, align: 'center', lineBreak: false })
+        doc.text(pdfMoney(item.price), colPrice, y, { width: 75, align: 'right', lineBreak: false })
+        doc.text(pdfMoney(lineTotal(item)), colSub, y, { width: R - colSub - 10, align: 'right', lineBreak: false })
         y += rowH
-        doc.moveTo(left, y - 6).lineTo(right, y - 6).lineWidth(0.5).strokeColor(C.line).stroke()
+        doc.moveTo(L, y - 7).lineTo(R, y - 7).lineWidth(0.5).strokeColor(C.line).stroke()
     }
 
-    // totals
-    if (y + 110 > H - 60) { footer(); doc.addPage(); y = 50 }
+    // ----- totals (right, directly under the items) -----
+    if (y + 110 > H - 70) { footer(); doc.addPage(); y = 50 }
     y += 6
-    const tx = 340
-    const totalLine = (label, value) => {
-        doc.font('Helvetica').fontSize(10).fillColor(C.muted).text(label, tx, y, { width: 110, lineBreak: false })
-        doc.fillColor(C.text).text(value, colSub, y, { width: colW.sub - 8, align: 'right', lineBreak: false })
-        y += 17
+    const totalLine = (name, value) => {
+        doc.font('Helvetica').fontSize(10).fillColor(C.muted).text(name, X2, y, { width: 110, lineBreak: false })
+        doc.fillColor(C.text).text(value, X2 + 110, y, { width: R - X2 - 120, align: 'right', lineBreak: false })
+        y += 18
     }
-    totalLine('Items subtotal', money(order.itemsPrice))
-    totalLine('Shipping', money(order.shippingPrice))
-    totalLine('Tax', money(order.taxPrice))
-    doc.moveTo(tx, y + 2).lineTo(right, y + 2).lineWidth(1.5).strokeColor(C.rule).stroke()
-    y += 10
-    doc.font('Helvetica-Bold').fontSize(12).fillColor(C.dark).text('Grand total', tx, y, { width: 110, lineBreak: false })
-    doc.fillColor(C.main).fontSize(13).text(money(order.totalPrice), colSub, y, { width: colW.sub - 8, align: 'right', lineBreak: false })
+    totalLine('Items subtotal', pdfMoney(order.itemsPrice))
+    if (order.discountPrice > 0) totalLine(`Voucher${order.voucher && order.voucher.code ? ` (${order.voucher.code})` : ''}`, '-' + pdfMoney(order.discountPrice))
+    totalLine('Shipping', Number(order.shippingPrice) > 0 ? pdfMoney(order.shippingPrice) : 'Free')
+    totalLine('Tax', pdfMoney(order.taxPrice))
+    doc.moveTo(X2, y + 2).lineTo(R, y + 2).lineWidth(1.5).strokeColor(C.rule).stroke()
+    y += 12
+    doc.font('Helvetica-Bold').fontSize(12).fillColor(C.dark).text('Grand total', X2, y, { width: 110, lineBreak: false })
+    doc.fillColor(C.main).fontSize(13).text(pdfMoney(order.totalPrice), X2 + 90, y - 1, { width: R - X2 - 100, align: 'right', lineBreak: false })
 
     footer()
     doc.end()

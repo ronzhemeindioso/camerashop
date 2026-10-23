@@ -10,10 +10,11 @@ const links = [
     { to: '/admin/users', label: 'Users', match: (p) => p.startsWith('/admin/user') },
     { to: '/admin/orders', label: 'Orders', match: (p) => p.startsWith('/admin/order') },
     { to: '/admin/products', label: 'Products', match: (p) => p.startsWith('/admin/product') },
+    { to: '/admin/vouchers', label: 'Vouchers', match: (p) => p.startsWith('/admin/voucher') },
     { to: '/admin/reviews', label: 'Reviews', match: (p) => p.startsWith('/admin/reviews') },
 ]
 
-const AdminLayout = ({ title, subtitle, actions, children }) => {
+const AdminLayout = ({ title, subtitle, actions, above, children }) => {
     const dispatch = useDispatch()
     const navigate = useNavigate()
     const { pathname } = useLocation()
@@ -56,6 +57,7 @@ const AdminLayout = ({ title, subtitle, actions, children }) => {
             </header>
 
             <main className="adm-container">
+                {above}
                 {(title || actions) && (
                     <div className="adm-page-head">
                         <div>

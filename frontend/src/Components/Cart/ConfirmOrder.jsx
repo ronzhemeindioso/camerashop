@@ -1,9 +1,16 @@
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import MetaData from '../Layout/MetaData'
 import CheckoutSteps from './CheckoutSteps'
 import { getUser } from '../../Utils/helpers'
 import { useSelector } from 'react-redux'
+import axios from 'axios'
+import { errMsg, successMsg } from '../../Utils/helpers'
+
+const describeVoucher = (v) => {
+    const off = v.discountType === 'percent' ? `${v.discountValue}% off` : `$${Number(v.discountValue).toFixed(2)} off`
+    return v.minPurchase > 0 ? `${off} · min. $${Number(v.minPurchase).toFixed(2)}` : off
+}
 const ConfirmOrder = () => {
     // const [user, setUser] = useState(getUser() ? getUser() : {})
     let navigate = useNavigate();
@@ -13,7 +20,51 @@ const ConfirmOrder = () => {
     const itemsPrice = cartItems.reduce((acc, item) => acc + item.price * item.quantity, 0)
     const shippingPrice = itemsPrice > 200 ? 0 : 25
     const taxPrice = Number((0.05 * itemsPrice).toFixed(2))
-    const totalPrice = (itemsPrice + shippingPrice + taxPrice).toFixed(2)
+
+    // Voucher (the server checks it again when the order is placed)
+    const [voucherInput, setVoucherInput] = useState('')
+    const [appliedVoucher, setAppliedVoucher] = useState(null) // { code, discount }
+    const [applying, setApplying] = useState(false)
+    const [availableVouchers, setAvailableVouchers] = useState([])
+    const discountPrice = appliedVoucher ? appliedVoucher.discount : 0
+    const totalPrice = Math.max(0, itemsPrice + shippingPrice + taxPrice - discountPrice).toFixed(2)
+
+    const apiConfig = { headers: { 'Content-Type': 'application/json' }, withCredentials: true }
+
+    useEffect(() => {
+        const loadAvailable = async () => {
+            try {
+                const { data } = await axios.get(`${import.meta.env.VITE_API}/vouchers/available`, apiConfig)
+                setAvailableVouchers(data.vouchers || [])
+            } catch (error) {
+                // the list is only a convenience - typing a code still works
+            }
+        }
+        loadAvailable()
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [])
+
+    const applyVoucher = async (code = voucherInput) => {
+        const trimmed = String(code).trim()
+        if (!trimmed) return errMsg('Please enter a voucher code')
+        setApplying(true)
+        try {
+            const { data } = await axios.post(
+                `${import.meta.env.VITE_API}/voucher/validate`,
+                { code: trimmed, itemsPrice },
+                apiConfig
+            )
+            setAppliedVoucher({ code: data.voucher.code, discount: data.discount })
+            setVoucherInput('')
+            successMsg(`Voucher ${data.voucher.code} applied`)
+        } catch (error) {
+            errMsg(error.response?.data?.message || error.message)
+        } finally {
+            setApplying(false)
+        }
+    }
+
+    const removeVoucher = () => setAppliedVoucher(null)
 
     const processToPayment = () => {
         const data = {
@@ -21,6 +72,10 @@ const ConfirmOrder = () => {
             shippingPrice,
             taxPrice,
             totalPrice
+        }
+        if (appliedVoucher) {
+            data.voucherCode = appliedVoucher.code
+            data.discountPrice = appliedVoucher.discount
         }
 
         sessionStorage.setItem('orderInfo', JSON.stringify(data))
@@ -72,8 +127,52 @@ const ConfirmOrder = () => {
                         <h4>Order Summary</h4>
                         <hr />
                         <p>Subtotal:  <span className="order-summary-values">${itemsPrice}</span></p>
+                        {appliedVoucher && (
+                            <p className="voucher-discount-line">Voucher ({appliedVoucher.code}): <span className="order-summary-values">-${discountPrice.toFixed(2)}</span></p>
+                        )}
                         <p>Shipping: <span className="order-summary-values">${shippingPrice}</span></p>
                         <p>Tax:  <span className="order-summary-values">${taxPrice}</span></p>
+
+                        <hr />
+
+                        <div className="voucher-box">
+                            {appliedVoucher ? (
+                                <div className="voucher-applied">
+                                    <span><i className="fa fa-ticket"></i> <b>{appliedVoucher.code}</b> applied</span>
+                                    <button type="button" className="voucher-remove" onClick={removeVoucher}>Remove</button>
+                                </div>
+                            ) : (
+                                <>
+                                    <label htmlFor="voucher_field" className="voucher-label">Have a voucher?</label>
+                                    <div className="voucher-input-row">
+                                        <input
+                                            type="text"
+                                            id="voucher_field"
+                                            className="form-control"
+                                            placeholder="Enter code"
+                                            value={voucherInput}
+                                            maxLength={30}
+                                            onChange={(e) => setVoucherInput(e.target.value.toUpperCase())}
+                                            onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); applyVoucher() } }}
+                                        />
+                                        <button type="button" className="btn btn-outline-secondary" onClick={() => applyVoucher()} disabled={applying}>
+                                            {applying ? '...' : 'Apply'}
+                                        </button>
+                                    </div>
+                                    {availableVouchers.length > 0 && (
+                                        <div className="voucher-list">
+                                            <small>Available for you:</small>
+                                            {availableVouchers.map(v => (
+                                                <button type="button" key={v.code} className="voucher-chip" onClick={() => applyVoucher(v.code)} disabled={applying} title={v.description || ''}>
+                                                    <b>{v.code}</b>
+                                                    <span>{describeVoucher(v)}</span>
+                                                </button>
+                                            ))}
+                                        </div>
+                                    )}
+                                </>
+                            )}
+                        </div>
 
                         <hr />
 

@@ -44,7 +44,7 @@ const ListOrders = () => {
         dispatch(myOrders());
         if (error) {
             toast.error(error, {
-                position: toast.POSITION.BOTTOM_RIGHT
+                position: 'bottom-right'
             });
         }
     }, [error])

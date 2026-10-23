@@ -11,6 +11,7 @@ import 'react-toastify/dist/ReactToastify.css';
 
 import { useDispatch, useSelector } from 'react-redux'
 import { allOrders, clearErrors, deleteOrder } from '../../actions/orderActions'
+import { confirmDialog } from '../../Utils/confirmDialog'
 import { DELETE_ORDER_RESET } from '../../constants/orderConstants'
 
 const statusColor = (status = '') => {
@@ -37,8 +38,15 @@ const OrdersList = () => {
         }
     }, [error, isDeleted])
 
-    const deleteOrderHandler = (id) => {
-        dispatch(deleteOrder(id))
+    const deleteOrderHandler = async (id) => {
+        const ok = await confirmDialog({
+            icon: 'alert',
+            tone: 'danger',
+            title: `Delete order #${id.slice(-8)}?`,
+            text: 'This order will be removed. This cannot be undone.',
+            confirmText: 'Delete order',
+        })
+        if (ok) dispatch(deleteOrder(id))
     }
 
     const list = orders || []

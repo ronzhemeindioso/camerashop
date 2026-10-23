@@ -84,6 +84,11 @@ const userSchema = new mongoose.Schema({
     },
     resetPasswordToken: String,
     resetPasswordExpire: Date,
+    // Admin can switch an account off without deleting it: false = cannot log in
+    isActive: {
+        type: Boolean,
+        default: true
+    },
     // Soft delete: null = active, a date = deleted at that time (row is kept in the DB)
     deletedAt: {
         type: Date,

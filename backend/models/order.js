@@ -53,6 +53,17 @@ const orderSchema = mongoose.Schema({
             }
         }
     ],
+    // voucher applied at checkout (the discount is already taken off totalPrice)
+    voucher: {
+        _id: false,
+        code: { type: String },
+        discountType: { type: String },
+        discountValue: { type: Number }
+    },
+    discountPrice: {
+        type: Number,
+        default: 0.0
+    },
     paymentInfo: {
         id: {
             type: String

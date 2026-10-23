@@ -740,6 +740,17 @@ a.adm-stat:hover {
   padding: 1rem 1.5rem 0.5rem;
 }
 
+/* chart cards on the dashboard get their titles back (hidden elsewhere) */
+.adm-dash .adm-card-head {
+  align-items: baseline;
+  gap: 0.6rem;
+}
+
+.adm-dash .adm-card-head h2 {
+  display: block;
+  font-size: 1rem;
+}
+
 .adm-dash .adm-card-body {
   padding: 0 1.5rem 1rem;
 }
@@ -1338,3 +1349,35 @@ body .Toastify__toast-container {
 
 .Toastify__close-button { color: currentColor; opacity: 0.6; }
 .Toastify__close-button:hover { opacity: 1; }
+
+/* ---------- confirmation popup (SweetAlert): white card, icon tile, Cancel + Confirm side by side ---------- */
+/* plain dim behind the popup - no blur */
+.swal2-container.po-swal-bg { background: rgba(0, 0, 0, .3) !important; backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }
+.swal2-popup.po-swal { width: 380px; max-width: 92vw; padding: 36px 32px 30px; border-radius: 14px; border: 1px solid #ececec; box-shadow: 0 6px 24px rgba(0, 0, 0, .12); }
+.swal2-popup.po-swal .po-swal-body { margin: 0; padding: 0; display: block; }
+
+/* small grey close button, top right */
+.swal2-popup.po-swal .po-swal-close { position: absolute; top: 10px; right: 10px; width: 20px; height: 20px; margin: 0; padding: 0; border-radius: 50%; background: #6b6b6b; color: #fff; font-size: 15px; line-height: 20px; font-family: Arial, sans-serif; box-shadow: none; }
+.swal2-popup.po-swal .po-swal-close:hover { background: #444; color: #fff; }
+
+/* rounded-square icon tile with a soft tint */
+.po-swal-icon { width: 52px; height: 52px; margin: 0 auto 16px; border-radius: 14px; display: flex; align-items: center; justify-content: center; background: #effaf5; color: #52b78f; }
+.po-swal-icon svg { width: 26px; height: 26px; display: block; }
+.po-swal-icon.warn { background: #fff7ec; color: #e8993c; }
+.po-swal-icon.danger { background: #fdf0f1; color: #d34c5a; }
+
+.po-swal-title { margin: 0 0 6px; font-size: 1.1rem; font-weight: 500; color: #111; text-align: center; }
+.po-swal-text { margin: 0; font-size: .85rem; line-height: 1.5; color: #6b6b6b; text-align: center; }
+.swal2-popup.po-swal .po-swal-input { margin: 16px 0 0; width: 100%; box-sizing: border-box; height: 40px; border-radius: 10px; border: 1px solid #e3e3e3; background: #f7f7f7; font-size: .85rem; box-shadow: none; }
+.swal2-popup.po-swal .po-swal-input:focus { border-color: #bdbdbd; box-shadow: none; }
+
+/* buttons side by side */
+.swal2-popup.po-swal .po-swal-actions { margin: 26px 0 0; width: 100%; flex-direction: row; gap: 14px; flex-wrap: nowrap; }
+.swal2-popup.po-swal .po-swal-cancel,
+.swal2-popup.po-swal .po-swal-confirm { flex: 1 1 0; margin: 0; padding: 10px 12px; border: 0; border-radius: 12px; font-size: .9rem; font-weight: 500; cursor: pointer; box-shadow: none; transition: filter .15s, background .15s; }
+.swal2-popup.po-swal .po-swal-cancel { background: #f4f4f4; color: #111; }
+.swal2-popup.po-swal .po-swal-cancel:hover { background: #ebebeb; }
+.swal2-popup.po-swal .po-swal-confirm { background: #52b78f; color: #fff; }
+.swal2-popup.po-swal .po-swal-confirm.warn { background: #e8993c; }
+.swal2-popup.po-swal .po-swal-confirm.danger { background: #d34c5a; }
+.swal2-popup.po-swal .po-swal-confirm:hover { filter: brightness(.95); }

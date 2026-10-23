@@ -33,6 +33,9 @@ const Payment = () => {
         order.shippingPrice = orderInfo.shippingPrice
         order.taxPrice = orderInfo.taxPrice
         order.totalPrice = orderInfo.totalPrice
+        if (orderInfo.voucherCode) {
+            order.voucherCode = orderInfo.voucherCode
+        }
     }
 
     // const createOrder = async (order) => {
@@ -48,7 +51,7 @@ const Payment = () => {
     //         // setIsUpdated(data.success)
     //         setLoading(false)
     //         toast.success('order created', {
-    //             position: toast.POSITION.BOTTOM_RIGHT
+    //             position: 'bottom-right'
     //         });
 
     //         // sessionStorage.removeItem('orderInfo')
@@ -56,22 +59,32 @@ const Payment = () => {
 
     //     } catch (error) {
     //         toast.error(error.response.data.message, {
-    //             position: toast.POSITION.BOTTOM_RIGHT
+    //             position: 'bottom-right'
     //         });
     //     }
     // }
 
-    const submitHandler = (e) => {
+    const submitHandler = async (e) => {
         e.preventDefault();
-        document.querySelector('#pay_btn').disabled = true;
+        const payButton = document.querySelector('#pay_btn')
+        payButton.disabled = true;
         order.paymentInfo = {
             id: 'pi_1DpdYh2eZvKYlo2CYIynhU32',
             status: 'succeeded'
         }
-        dispatch(createOrder(order))
+        const result = await dispatch(createOrder(order))
+        if (!result || !result.success) {
+            // e.g. the voucher expired or was used up while the customer was paying
+            toast.error((result && result.message) || 'Could not place the order', {
+                position: 'bottom-right'
+            })
+            payButton.disabled = false
+            return
+        }
         toast.success('order created', {
             position: 'bottom-right'
         })
+        sessionStorage.removeItem('orderInfo')
         dispatch(clearCart())
         navigate('/success')
     }

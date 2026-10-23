@@ -17,6 +17,8 @@ const {
     logout,
     createUser,
     restoreUser,
+    setUserActive,
+    permanentDeleteUsers,
     socialLogin,
 } = require('../controllers/auth');
 const { isAuthenticatedUser, authorizeRoles } = require('../middlewares/auth')
@@ -35,5 +37,7 @@ router.get('/admin/users', isAuthenticatedUser, authorizeRoles('admin'), allUser
 router.route('/admin/user/:id').get(isAuthenticatedUser, authorizeRoles('admin'), getUserDetails).delete(isAuthenticatedUser, authorizeRoles('admin'), deleteUser).put(isAuthenticatedUser, authorizeRoles('admin'), updateUser)
 router.post('/admin/user/new', isAuthenticatedUser, authorizeRoles('admin'), createUser)
 router.put('/admin/user/:id/restore', isAuthenticatedUser, authorizeRoles('admin'), restoreUser)
+router.put('/admin/user/:id/status', isAuthenticatedUser, authorizeRoles('admin'), setUserActive)
+router.delete('/admin/users/permanent', isAuthenticatedUser, authorizeRoles('admin'), permanentDeleteUsers)
 router.get('/logout', logout);
 module.exports = router;

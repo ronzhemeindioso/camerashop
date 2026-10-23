@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 
 import MetaData from '../Layout/MetaData'
+import { confirmTrash } from '../../Utils/confirmDialog'
 import Loader from '../Layout/Loader'
 import AdminLayout from './AdminLayout'
 import DataTable from './DataTable'
@@ -52,15 +53,15 @@ const ProductsList = () => {
         }
     }, [error, deleteError, isDeleted,])
 
-    const softDeleteHandler = (id, name) => {
-        if (window.confirm(`Move "${name}" to trash? You can restore it later.`)) {
+    const softDeleteHandler = async (id, name) => {
+        if (await confirmTrash(`Move "${name}" to trash?`, 'You can restore it later.')) {
             dispatch(deleteProduct(id))
         }
     }
 
-    const bulkDeleteHandler = () => {
+    const bulkDeleteHandler = async () => {
         if (selectedInView.length === 0) return
-        if (window.confirm(`Move ${selectedInView.length} selected product(s) to trash? You can restore them later.`)) {
+        if (await confirmTrash(`Move ${selectedInView.length} selected product(s) to trash?`, 'You can restore them later.')) {
             dispatch(bulkDeleteProducts(selectedInView))
         }
     }

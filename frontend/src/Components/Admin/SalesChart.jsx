@@ -28,11 +28,10 @@ const labelFor = (period, groupBy) => {
 const makePresets = () => {
     const today = new Date()
     return [
-        { key: 'all', label: 'All time', from: '', to: '', groupBy: 'month' },
-        { key: '7', label: 'Last 7 days', from: iso(daysAgo(6)), to: iso(today), groupBy: 'day' },
-        { key: '30', label: 'Last 30 days', from: iso(daysAgo(29)), to: iso(today), groupBy: 'day' },
-        { key: 'month', label: 'This month', from: iso(new Date(today.getFullYear(), today.getMonth(), 1)), to: iso(today), groupBy: 'day' },
-        { key: 'year', label: 'This year', from: `${today.getFullYear()}-01-01`, to: iso(today), groupBy: 'month' },
+        { key: '7', label: '7D', from: iso(daysAgo(6)), to: iso(today), groupBy: 'day' },
+        { key: '30', label: '30D', from: iso(daysAgo(29)), to: iso(today), groupBy: 'day' },
+        { key: '90', label: '90D', from: iso(daysAgo(89)), to: iso(today), groupBy: 'month' },
+        { key: 'all', label: 'All', from: '', to: '', groupBy: 'month' },
     ]
 }
 
@@ -46,7 +45,7 @@ const Segmented = ({ value, options, onChange }) => (
                 onClick={() => onChange(o.value)}
                 style={{
                     padding: '0 12px',
-                    height: 36,
+                    height: 34,
                     border: 'none',
                     cursor: 'pointer',
                     fontFamily: 'inherit',
@@ -75,12 +74,14 @@ const SalesChart = () => {
     const [to, setTo] = useState('')
     const [groupBy, setGroupBy] = useState('month')
     const [chartType, setChartType] = useState('line')
+    const [customOpen, setCustomOpen] = useState(false)
     const [result, setResult] = useState({ sales: [], groupBy: 'month' })
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState('')
 
     const rangeInvalid = from && to && from > to
-    const activePreset = presets.find(p => p.from === from && p.to === to)
+    const activePreset = customOpen ? null : presets.find(p => p.from === from && p.to === to)
+    const showCustom = customOpen || !activePreset
 
     useEffect(() => {
         if (rangeInvalid) {
@@ -119,6 +120,7 @@ const SalesChart = () => {
     const onPreset = (key) => {
         const p = presets.find(x => x.key === key)
         if (!p) return
+        setCustomOpen(false)
         setFrom(p.from)
         setTo(p.to)
         setGroupBy(p.groupBy)
@@ -127,10 +129,14 @@ const SalesChart = () => {
     const axisProps = { tick: { fontSize: 11, fill: '#6b5a73' }, stroke: '#cdbbd6' }
     const shared = (
         <>
-            <CartesianGrid stroke="#e9dff0" strokeDasharray="4 4" />
+            <CartesianGrid stroke="#e9dff0" strokeDasharray="4 4" vertical={false} />
             <XAxis dataKey="label" {...axisProps} />
             <YAxis {...axisProps} width={72} tickFormatter={(v) => `₱${Number(v).toLocaleString()}`} />
-            <Tooltip formatter={(value, name) => name === 'total' ? [money(value), 'Sales'] : [value, 'Orders']} />
+            <Tooltip
+                cursor={{ fill: 'rgba(126, 61, 132, 0.08)' }}
+                contentStyle={{ borderRadius: 8, border: '1px solid #e6d8ef', fontSize: 12 }}
+                formatter={(value, name) => name === 'total' ? [money(value), 'Sales'] : [value, 'Orders']}
+            />
         </>
     )
 
@@ -147,28 +153,26 @@ const SalesChart = () => {
                 </div>
 
                 <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 8 }}>
-                    <select
-                        className="adm-select"
-                        style={fieldStyle}
-                        value={activePreset ? activePreset.key : 'custom'}
-                        onChange={(e) => onPreset(e.target.value)}
-                        aria-label="Quick range"
-                    >
-                        {!activePreset && <option value="custom">Custom range</option>}
-                        {presets.map(p => <option key={p.key} value={p.key}>{p.label}</option>)}
-                    </select>
-
-                    <input type="date" className="adm-input" style={fieldStyle} value={from}
-                        max={to || undefined} onChange={(e) => setFrom(e.target.value)} aria-label="From date" title="From" />
-                    <span style={{ color: '#6b5a73' }}>to</span>
-                    <input type="date" className="adm-input" style={fieldStyle} value={to}
-                        min={from || undefined} onChange={(e) => setTo(e.target.value)} aria-label="To date" title="To" />
-
+                    <Segmented
+                        value={showCustom ? 'custom' : activePreset.key}
+                        onChange={(v) => (v === 'custom' ? setCustomOpen(true) : onPreset(v))}
+                        options={[...presets.map(p => ({ value: p.key, label: p.label })), { value: 'custom', label: 'Custom' }]}
+                    />
                     <Segmented value={groupBy} onChange={setGroupBy}
                         options={[{ value: 'day', label: 'Day' }, { value: 'month', label: 'Month' }]} />
                     <Segmented value={chartType} onChange={setChartType}
                         options={[{ value: 'line', label: 'Line' }, { value: 'bar', label: 'Bar' }]} />
                 </div>
+
+                {showCustom && (
+                    <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 8, marginTop: 8 }}>
+                        <input type="date" className="adm-input" style={fieldStyle} value={from}
+                            max={to || undefined} onChange={(e) => setFrom(e.target.value)} aria-label="From date" title="From" />
+                        <span style={{ color: '#6b5a73' }}>to</span>
+                        <input type="date" className="adm-input" style={fieldStyle} value={to}
+                            min={from || undefined} onChange={(e) => setTo(e.target.value)} aria-label="To date" title="To" />
+                    </div>
+                )}
 
                 {error && <div style={{ color: '#b71c1c', fontWeight: 600, marginTop: 8, fontSize: '0.9rem' }}>{error}</div>}
             </div>
@@ -183,12 +187,12 @@ const SalesChart = () => {
                         {chartType === 'line' ? (
                             <LineChart data={chartData} margin={{ top: 10, right: 16, bottom: 5, left: 0 }}>
                                 {shared}
-                                <Line type="monotone" dataKey="total" stroke={PURPLE} strokeWidth={3} dot={{ r: 3 }} activeDot={{ r: 5 }} />
+                                <Line type="monotone" dataKey="total" stroke={PURPLE} strokeWidth={3} dot={{ r: 4 }} activeDot={{ r: 6 }} />
                             </LineChart>
                         ) : (
                             <BarChart data={chartData} margin={{ top: 10, right: 16, bottom: 5, left: 0 }}>
                                 {shared}
-                                <Bar dataKey="total" fill={PURPLE} radius={[6, 6, 0, 0]} />
+                                <Bar dataKey="total" fill={PURPLE} radius={[6, 6, 0, 0]} maxBarSize={72} />
                             </BarChart>
                         )}
                     </ResponsiveContainer>

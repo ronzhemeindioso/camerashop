@@ -42,11 +42,14 @@ export const createOrder = (order) => async (dispatch) => {
             type: CREATE_ORDER_SUCCESS,
             payload: data
         })
+        return { success: true }
     } catch (error) {
+        const message = error.response?.data?.message || error.message
         dispatch({
             type: CREATE_ORDER_FAIL,
-            payload: error.response.data.message
+            payload: message
         })
+        return { success: false, message }
     }
 
 }
@@ -67,9 +70,10 @@ export const myOrders = () => async (dispatch) => {
     }
 }
 
-export const getOrderDetails = (id) => async (dispatch) => {
+// silent = true reloads the order in the background (no full-page loader), used right after a status update
+export const getOrderDetails = (id, silent = false) => async (dispatch) => {
     try {
-        dispatch({ type: ORDER_DETAILS_REQUEST });
+        if (!silent) dispatch({ type: ORDER_DETAILS_REQUEST });
         const { data } = await axios.get(`${import.meta.env.VITE_API}/order/${id}`, { withCredentials: true })
         dispatch({
             type: ORDER_DETAILS_SUCCESS,
@@ -103,8 +107,7 @@ export const allOrders = () => async (dispatch) => {
     }
 }
 
-export const updateOrder = (id, orderData) => async (dispatch) => {
-    console.log(orderData)
+export const updateOrder = (id, orderData) => async (dispatch, getState) => {
     try {
         dispatch({ type: UPDATE_ORDER_REQUEST })
         const config = {
@@ -120,10 +123,28 @@ export const updateOrder = (id, orderData) => async (dispatch) => {
             emailSent: data.emailSent,
             emailMessage: data.emailMessage
         })
+        // 1) show the new status straight away from the server's reply (keeps the customer + stock info already on screen)
+        const current = getState().orderDetails.order || {}
+        if (data.order) {
+            dispatch({
+                type: ORDER_DETAILS_SUCCESS,
+                payload: {
+                    ...current,
+                    ...data.order,
+                    user: current.user,
+                    orderItems: (data.order.orderItems || []).map(item => {
+                        const old = (current.orderItems || []).find(o => String(o.product) === String(item.product))
+                        return old && 'stock' in old ? { ...item, stock: old.stock } : item
+                    })
+                }
+            })
+        }
+        // 2) then quietly reload in the background so the stock counts are exact
+        dispatch(getOrderDetails(id, true))
     } catch (error) {
         dispatch({
             type: UPDATE_ORDER_FAIL,
-            payload: error.response.data.message
+            payload: (error.response && error.response.data && error.response.data.message) || error.message || 'Could not update the order'
         })
 
     }

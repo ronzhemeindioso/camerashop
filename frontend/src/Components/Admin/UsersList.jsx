@@ -11,6 +11,7 @@ import { formatDate } from './adminHelpers'
 
 import axios from 'axios';
 import { errMsg, successMsg } from '../../Utils/helpers';
+import { confirmTrash, confirmInactivate, confirmActivate } from '../../Utils/confirmDialog';
 
 const UsersList = () => {
     const [loading, setLoading] = useState(true)
@@ -19,6 +20,7 @@ const UsersList = () => {
     const [isDeleted, setIsDeleted] = useState('')
     const [deletedId, setDeletedId] = useState('')
     const [roleFilter, setRoleFilter] = useState('')
+    const [statusFilter, setStatusFilter] = useState('')
 
     const config = {
         headers: {
@@ -39,11 +41,26 @@ const UsersList = () => {
     }
 
     const deleteUser = async (id, name) => {
-        if (!window.confirm(`Move "${name}" to trash? You can restore them later.`)) return
+        if (!(await confirmTrash(`Move "${name}" to trash?`, 'You can restore them later.'))) return
         try {
             setDeletedId(id)
             const { data } = await axios.delete(`${import.meta.env.VITE_API}/admin/user/${id}`, config)
             setIsDeleted(data.success)
+        } catch (error) {
+            setError(error.response?.data?.message || error.message)
+        }
+    }
+
+    const toggleActive = async (u) => {
+        const makeActive = u.isActive === false
+        const ok = makeActive
+            ? await confirmActivate(`Activate "${u.name}"?`)
+            : await confirmInactivate(`Inactivate "${u.name}"?`)
+        if (!ok) return
+        try {
+            await axios.put(`${import.meta.env.VITE_API}/admin/user/${u._id}/status`, { isActive: makeActive }, config)
+            setAllUsers(prev => prev.map(x => x._id === u._id ? { ...x, isActive: makeActive } : x))
+            successMsg(makeActive ? 'User activated' : 'User inactivated')
         } catch (error) {
             setError(error.response?.data?.message || error.message)
         }
@@ -70,7 +87,12 @@ const UsersList = () => {
 
     const admins = allUsers.filter(u => u.role === 'admin').length
     const activeRoles = new Set(allUsers.map(u => u.role).filter(Boolean)).size
-    const rows = roleFilter ? allUsers.filter(u => u.role === roleFilter) : allUsers
+    const rows = allUsers.filter(u => {
+        if (roleFilter && u.role !== roleFilter) return false
+        if (statusFilter === 'active' && u.isActive === false) return false
+        if (statusFilter === 'inactive' && u.isActive !== false) return false
+        return true
+    })
 
     const columns = [
         {
@@ -89,6 +111,10 @@ const UsersList = () => {
             key: 'role', label: 'Role', sortable: true,
             render: (u) => <span className={`adm-pill ${u.role === 'admin' ? 'maroon' : 'tag'}`}>{u.role}</span>
         },
+        {
+            key: 'isActive', label: 'Status', sortable: true, sortValue: (u) => (u.isActive === false ? 0 : 1),
+            render: (u) => <span className={`adm-pill dot ${u.isActive === false ? 'red' : 'green'}`}>{u.isActive === false ? 'Inactive' : 'Active'}</span>
+        },
         { key: 'createdAt', label: 'Joined', sortable: true, sortValue: (u) => new Date(u.createdAt || 0).getTime(), render: (u) => <span className="adm-muted">{formatDate(u.createdAt)}</span> },
         {
             key: 'actions', label: '',
@@ -97,6 +123,9 @@ const UsersList = () => {
                     <Link to={`/admin/user/${u._id}`} className="adm-icon-btn" title="Edit">
                         <i className="fa fa-pencil"></i>
                     </Link>
+                    <button className="adm-icon-btn" title={u.isActive === false ? 'Activate' : 'Inactivate'} onClick={() => toggleActive(u)}>
+                        <i className={`fa ${u.isActive === false ? 'fa-check-circle' : 'fa-ban'}`}></i>
+                    </button>
                     <button className="adm-icon-btn danger" title="Move to trash" onClick={() => deleteUser(u._id, u.name)}>
                         <i className="fa fa-trash"></i>
                     </button>
@@ -144,11 +173,18 @@ const UsersList = () => {
                             emptyText="No users found."
                             actions={<Link to="/admin/user/new" className="adm-btn adm-btn-primary">+ Add user</Link>}
                             filters={
-                                <select className="adm-select" value={roleFilter} onChange={(e) => setRoleFilter(e.target.value)}>
-                                    <option value="">All roles</option>
-                                    <option value="admin">Admin</option>
-                                    <option value="user">User</option>
-                                </select>
+                                <>
+                                    <select className="adm-select" value={roleFilter} onChange={(e) => setRoleFilter(e.target.value)}>
+                                        <option value="">All roles</option>
+                                        <option value="admin">Admin</option>
+                                        <option value="user">User</option>
+                                    </select>
+                                    <select className="adm-select" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
+                                        <option value="">All status</option>
+                                        <option value="active">Active</option>
+                                        <option value="inactive">Inactive</option>
+                                    </select>
+                                </>
                             }
                         />
                     </>

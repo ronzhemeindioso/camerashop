@@ -33,6 +33,10 @@ exports.isAuthenticatedUser = async (req, res, next) => {
         return res.status(401).json({ message: 'User not found, please login again' })
     }
 
+    if (req.user.isActive === false) {
+        return res.status(403).json({ message: 'Your account is inactive. Please contact the administrator.' })
+    }
+
     next()
 };
 

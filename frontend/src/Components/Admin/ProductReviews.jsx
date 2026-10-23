@@ -1,148 +1,132 @@
 import React, { useState, useEffect } from 'react'
-
+import axios from 'axios'
 
 import MetaData from '../Layout/MetaData'
 import Loader from '../Layout/Loader'
 import AdminLayout from './AdminLayout'
 import DataTable from './DataTable'
-// import Toast from '../Layout/Toast'
-import Swal from 'sweetalert2'
 import { getToken, errMsg, successMsg } from '../../Utils/helpers'
-import axios from 'axios'
+import { confirmDialog } from '../../Utils/confirmDialog'
 
 const ProductReviews = () => {
-    const [productId, setProductId] = useState('')
-    const [listReviews, setListReviews] = useState([])
-    const [refreshKey, setRefreshKey] = useState(0)
+    const [loading, setLoading] = useState(true)
     const [products, setProducts] = useState([])
+    const [productFilter, setProductFilter] = useState('')
+    const [ratingFilter, setRatingFilter] = useState('')
 
     const config = {
         headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${getToken()}`
-        }
+        },
+        withCredentials: true
     }
 
-    const getProductReviews = async (id) => {
+    // every review of every product, loaded from the products list
+    const loadReviews = async () => {
         try {
-            const { data } = await axios.get(`${import.meta.env.VITE_API}/reviews?id=${id}`, config)
-            setListReviews(data.reviews)
+            const { data } = await axios.get(`${import.meta.env.VITE_API}/admin/products`, config)
+            setProducts(data.products || [])
         } catch (error) {
-            setListReviews([])
+            setProducts([])
+            errMsg(error.response?.data?.message || error.message)
+        } finally {
+            setLoading(false)
         }
     }
 
-    const deleteReview = async (id, productId) => {
+    useEffect(() => {
+        loadReviews()
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [])
+
+    // flatten: one row per review, remembering which product it belongs to
+    const allReviews = products.flatMap(p =>
+        (p.reviews || []).map(r => ({ ...r, productId: p._id, productName: p.name }))
+    )
+
+    const rows = allReviews.filter(r => {
+        if (productFilter && r.productId !== productFilter) return false
+        if (ratingFilter && Math.round(Number(r.rating)) !== Number(ratingFilter)) return false
+        return true
+    })
+
+    const productsWithReviews = products.filter(p => (p.reviews || []).length > 0)
+
+    const remove = async (r) => {
+        const ok = await confirmDialog({
+            icon: 'alert',
+            tone: 'danger',
+            title: 'Delete this review?',
+            text: `The review by ${r.name} on "${r.productName}" will be removed. This cannot be undone.`,
+            confirmText: 'Delete review',
+        })
+        if (!ok) return
         try {
-            const { data } = await axios.delete(`${import.meta.env.VITE_API}/reviews?id=${id}&productId=${productId}`, config)
+            const { data } = await axios.delete(`${import.meta.env.VITE_API}/reviews?id=${r._id}&productId=${r.productId}`, config)
             if (data.success) {
                 successMsg('Review deleted successfully')
-                setRefreshKey((k) => k + 1)
+                await loadReviews()
             }
         } catch (error) {
             errMsg(error.response?.data?.message || error.message)
         }
     }
 
-    const deleteReviewHandler = (id) => {
-        Swal.fire({
-            title: 'Delete Review',
-            icon: 'info',
-            text: 'Do you want to delete this review',
-            confirmButtonText: 'Delete',
-            showCancelButton: true
-        }).then((result) => {
-            if (result.isConfirmed) {
-                deleteReview(id, productId.trim())
-            }
-        })
-    }
-
-    // product list for the dropdown (reloaded after a delete so the review counts stay right)
-    useEffect(() => {
-        const loadProducts = async () => {
-            try {
-                const { data } = await axios.get(`${import.meta.env.VITE_API}/admin/products`, config)
-                setProducts(data.products || [])
-            } catch (error) {
-                setProducts([])
-            }
-        }
-        loadProducts()
-    }, [refreshKey])
-
-    // Search automatically: once the box holds a complete product ID (24 hex characters),
-    // look it up after a short pause. Anything else just clears the list.
-    useEffect(() => {
-        const id = productId.trim()
-        if (!/^[a-f\d]{24}$/i.test(id)) {
-            setListReviews([])
-            return
-        }
-        const timer = setTimeout(() => getProductReviews(id), 300)
-        return () => clearTimeout(timer)
-    }, [productId, refreshKey])
-
     const columns = [
         {
-            key: 'id', label: 'Review ID', sortValue: (r) => r._id,
-            render: (r) => <span className="adm-mono" title={r._id}>#{r._id.slice(-8)}</span>
+            key: 'productName', label: 'Product', sortable: true,
+            render: (r) => <span className="adm-strong">{r.productName}</span>
         },
         {
             key: 'rating', label: 'Rating', sortable: true, sortValue: (r) => Number(r.rating),
             render: (r) => <span className="adm-pill amber">{r.rating} <i className="fa fa-star"></i></span>
         },
         { key: 'comment', label: 'Comment', render: (r) => <div className="adm-truncate" style={{ maxWidth: 360 }}>{r.comment}</div> },
-        { key: 'name', label: 'User', sortable: true, render: (r) => <span className="adm-strong">{r.name}</span> },
+        { key: 'name', label: 'User', sortable: true, render: (r) => <span className="adm-muted">{r.name}</span> },
         {
             key: 'actions', label: '',
             render: (r) => (
                 <div className="adm-actions">
-                    <button className="adm-icon-btn danger" title="Delete" onClick={() => deleteReviewHandler(r._id)}>
+                    <button className="adm-icon-btn danger" title="Delete" onClick={() => remove(r)}>
                         <i className="fa fa-trash"></i>
                     </button>
                 </div>
             )
         },
-    ];
+    ]
 
     return (
         <>
             <MetaData title={'Product Reviews'} />
-            <AdminLayout title="Reviews" subtitle="Choose a product to manage its reviews">
-                <div className="adm-card">
-                    <div className="adm-card-head">
-                        <h2>Find reviews</h2>
-                        <div className="adm-toolbar">
-                            <select
-                                id="productId_field"
-                                className="adm-select"
-                                style={{ minWidth: 320 }}
-                                value={productId}
-                                onChange={(e) => setProductId(e.target.value)}
-                            >
-                                <option value="">Select a product...</option>
-                                {products.map(p => (
-                                    <option key={p._id} value={p._id}>
-                                        {p.name} ({p.numOfReviews || 0} {p.numOfReviews === 1 ? 'review' : 'reviews'})
-                                    </option>
-                                ))}
-                            </select>
-                        </div>
-                    </div>
-                </div>
-
-                {listReviews && listReviews.length > 0 ? (
+            <AdminLayout
+                title="Reviews"
+                subtitle={<><b>{allReviews.length}</b> total, see what customers say about your products</>}
+            >
+                {loading ? <Loader /> : (
                     <DataTable
-                        title="Reviews"
+                        title="All reviews"
                         columns={columns}
-                        rows={listReviews}
+                        rows={rows}
                         rowKey={(r) => r._id}
-                        searchText={(r) => `${r.name} ${r.comment}`}
+                        searchText={(r) => `${r.productName} ${r.name} ${r.comment}`}
                         searchPlaceholder="Search reviews..."
+                        emptyText="No reviews yet."
+                        filters={
+                            <>
+                                <select className="adm-select" value={productFilter} onChange={(e) => setProductFilter(e.target.value)}>
+                                    <option value="">All products</option>
+                                    {productsWithReviews.map(p => (
+                                        <option key={p._id} value={p._id}>{p.name} ({p.reviews.length})</option>
+                                    ))}
+                                </select>
+                                <select className="adm-select" value={ratingFilter} onChange={(e) => setRatingFilter(e.target.value)}>
+                                    <option value="">All ratings</option>
+                                    {[5, 4, 3, 2, 1].map(n => <option key={n} value={n}>{n} star{n > 1 ? 's' : ''}</option>)}
+                                </select>
+                            </>
+                        }
                     />
-                ) : (
-                    <div className="adm-card"><div className="adm-card-body adm-empty">{productId ? 'This product has no reviews.' : 'Select a product to see its reviews.'}</div></div>
                 )}
             </AdminLayout>
         </>

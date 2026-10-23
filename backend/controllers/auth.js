@@ -1,4 +1,5 @@
 const User = require('../models/user');
+const mongoose = require('mongoose')
 const crypto = require('crypto')
 const cloudinary = require('cloudinary')
 const sendEmail = require('../utils/sendEmail')
@@ -93,6 +94,10 @@ exports.loginUser = async (req, res, next) => {
             return res.status(401).json({ message: 'Invalid Email or Password' })
         }
 
+        if (user.isActive === false) {
+            return res.status(403).json({ message: 'Your account is inactive. Please contact the administrator.' })
+        }
+
         user.password = undefined // never send the hash back
         sendToken(user, 200, res)
     } catch (err) {
@@ -118,6 +123,10 @@ exports.socialLogin = async (req, res) => {
 
         if (user && user.deletedAt) {
             return res.status(403).json({ message: 'This account has been deactivated' })
+        }
+
+        if (user && user.isActive === false) {
+            return res.status(403).json({ message: 'Your account is inactive. Please contact the administrator.' })
         }
 
         if (!user) {
@@ -333,6 +342,62 @@ exports.restoreUser = async (req, res, next) => {
     await user.save({ validateBeforeSave: false })
     return res.status(200).json({
         success: true,
+    })
+}
+
+// Admin: activate / inactivate an account (PUT body: { isActive: true | false })
+exports.setUserActive = async (req, res, next) => {
+    const { isActive } = req.body || {}
+    if (typeof isActive !== 'boolean') {
+        return res.status(400).json({ message: 'isActive must be true or false' })
+    }
+
+    const user = await User.findById(req.params.id);
+    if (!user) {
+        return res.status(404).json({ message: `User does not found with id: ${req.params.id}` })
+    }
+    if (!isActive && String(user._id) === String(req.user._id)) {
+        return res.status(400).json({ message: 'You cannot inactivate your own account' })
+    }
+
+    user.isActive = isActive
+    await user.save({ validateBeforeSave: false })
+    return res.status(200).json({
+        success: true,
+        isActive: user.isActive,
+    })
+}
+
+// Admin: permanently remove users that are already in the trash (body: { ids: [...] })
+exports.permanentDeleteUsers = async (req, res, next) => {
+    const { ids } = req.body || {}
+
+    if (!Array.isArray(ids) || ids.length === 0) {
+        return res.status(400).json({ success: false, message: 'Select at least one user to delete permanently' })
+    }
+
+    const validIds = ids.filter(id => mongoose.Types.ObjectId.isValid(id))
+
+    // deletedAt: { $ne: null } -> never touches an active user
+    const users = await User.find({ _id: { $in: validIds }, deletedAt: { $ne: null } })
+    if (users.length === 0) {
+        return res.status(404).json({ success: false, message: 'No deleted users found' })
+    }
+
+    // remove uploaded avatars from Cloudinary (skip the shared default / social-login pictures)
+    for (const user of users) {
+        const id = user.avatar && user.avatar.public_id
+        if (id && !id.includes('default_avatar') && !id.startsWith('social_')) {
+            try { await cloudinary.v2.uploader.destroy(id) } catch (e) { console.log(e) }
+        }
+    }
+
+    const result = await User.deleteMany({ _id: { $in: users.map(u => u._id) } })
+
+    return res.status(200).json({
+        success: true,
+        deletedCount: result.deletedCount,
+        message: `${result.deletedCount} user(s) permanently deleted`
     })
 }
 

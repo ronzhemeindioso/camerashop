@@ -48,7 +48,7 @@ const OrderDetails = () => {
 
         if (error) {
             toast.error(error, {
-                position: toast.POSITION.BOTTOM_RIGHT
+                position: 'bottom-right'
             });
         }
     }, [error, id])
@@ -72,6 +72,9 @@ const OrderDetails = () => {
                             <p><b>Name:</b> {user && user.name}</p>
                             <p><b>Phone:</b> {shippingInfo && shippingInfo.phoneNo}</p>
                             <p className="mb-4"><b>Address:</b>{shippingDetails}</p>
+                            {order.discountPrice > 0 && (
+                                <p><b>Voucher:</b> {order.voucher && order.voucher.code} (-${Number(order.discountPrice).toFixed(2)})</p>
+                            )}
                             <p><b>Amount:</b> ${totalPrice}</p>
 
                             <hr />

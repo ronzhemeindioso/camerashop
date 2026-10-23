@@ -112,7 +112,7 @@ const Dashboard = () => {
                         <div className="adm-stats" ref={statsRef}>
                             <div className="adm-stat">
                                 <div className="adm-stat-icon"><i className="fa fa-money"></i></div>
-                                <div><div className="adm-stat-value">{money(totalAmount)}</div><div className="adm-stat-label">Total amount</div></div>
+                                <div><div className="adm-stat-value">{money(totalAmount)}</div><div className="adm-stat-label">Revenue</div></div>
                             </div>
                             <Link className="adm-stat" to="/admin/products">
                                 <div className="adm-stat-icon"><i className="fa fa-cube"></i></div>
@@ -134,11 +134,17 @@ const Dashboard = () => {
                             style={chartsHeight ? { height: chartsHeight } : undefined}
                         >
                             <div className="adm-card">
-                                <div className="adm-card-head"><h2>Sales by product</h2></div>
+                                <div className="adm-card-head">
+                                    <h2>Sales by product</h2>
+                                    <span style={{ color: '#6b5a73', fontSize: '0.85rem' }}>Share of total sales</span>
+                                </div>
                                 <div className="adm-card-body"><ProductSalesChart /></div>
                             </div>
                             <div className="adm-card">
-                                <div className="adm-card-head"><h2>Sales by user</h2></div>
+                                <div className="adm-card-head">
+                                    <h2>Top customers</h2>
+                                    <span style={{ color: '#6b5a73', fontSize: '0.85rem' }}>Total spent per customer</span>
+                                </div>
                                 <div className="adm-card-body"><UserSalesChart /></div>
                             </div>
                             <div className="adm-card adm-chart-wide">

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import Swal from 'sweetalert2'
 import MetaData from '../Layout/MetaData'
@@ -24,6 +24,15 @@ const NEXT_STATUS = {
     Refunded: [],
 }
 
+// one-line explanation shown under each option in the status dropdown
+const STATUS_HINT = {
+    Shipped: 'The order is on its way (you can add a tracking number)',
+    Delivered: 'The customer received the order',
+    Returned: 'Items go back into stock',
+    Refunded: 'Final - locks the order',
+}
+const needsStock = (status) => status === 'Shipped' || status === 'Delivered'
+
 const statusColor = (status = '') => {
     if (status.includes('Refunded')) return 'maroon'
     if (status.includes('Returned')) return 'red'
@@ -40,10 +49,6 @@ const IMAGE_PLACEHOLDER = 'data:image/svg+xml;utf8,' + encodeURIComponent(
     '<path d="M16 38l9-11 7 8 4-5 6 8z" fill="#cdb4d8"/><circle cx="21" cy="20" r="4" fill="#cdb4d8"/></svg>'
 )
 
-// Stripe dashboard link (test-mode link while running the dev server)
-const stripePaymentUrl = (id) =>
-    `https://dashboard.stripe.com/${import.meta.env.DEV ? 'test/' : ''}payments/${id}`
-
 const ProcessOrder = () => {
     const dispatch = useDispatch();
     const { id: orderId } = useParams();
@@ -52,46 +57,58 @@ const ProcessOrder = () => {
     const { error, isUpdated, emailSent, emailMessage } = useSelector(state => state.order)
     const {
         shippingInfo, orderItems = [], paymentInfo, user, orderStatus, statusHistory = [], trackingNumber,
-        itemsPrice, shippingPrice, taxPrice, totalPrice, createdAt, paidAt, deliveredAt, stockDeducted,
+        itemsPrice, shippingPrice, taxPrice, totalPrice, discountPrice, voucher, createdAt, paidAt, deliveredAt, stockDeducted,
     } = order
 
-    const [status, setStatus] = useState('')
-    const [tracking, setTracking] = useState('')
     const [saving, setSaving] = useState(false)
+    const [menuOpen, setMenuOpen] = useState(false)
+    const menuRef = useRef(null)
 
-    const errMsg = (message = '') => toast.error(message, { position: 'bottom-center' });
-    const successMsg = (message = '') => toast.success(message, { position: 'bottom-center' });
+    const errMsg = (message = '') => toast.error(message, { position: 'bottom-right' });
+    const successMsg = (message = '') => toast.success(message, { position: 'bottom-right' });
 
+    // load the order when the page opens
     useEffect(() => {
         dispatch(getOrderDetails(orderId))
+    }, [dispatch, orderId])
+
+    // messages after an update (the order itself is refreshed by the updateOrder action)
+    useEffect(() => {
         if (error) {
             errMsg(error);
             dispatch(clearErrors())
         }
         if (isUpdated) {
-            // stay on the page so the progress steps show what changed
-            successMsg('Order updated');
+            // the steps are already updated; show the messages right away
+            successMsg('Order updated')
             // tell the admin whether the customer was emailed the receipt
             if (emailSent) successMsg(emailMessage || 'Receipt emailed to the customer')
-            else if (emailMessage && emailMessage !== 'Status unchanged') toast.warn(`Order updated, but the customer email was not sent: ${emailMessage}`, { position: 'bottom-center' })
+            else if (emailMessage && emailMessage !== 'Status unchanged') toast.warn(`Order updated, but the customer email was not sent: ${emailMessage}`, { position: 'bottom-right' })
             dispatch({ type: UPDATE_ORDER_RESET })
-            setTracking('')
         }
-    }, [error, isUpdated, orderId])
+    }, [error, isUpdated])
 
-    // start the dropdown on the order's current status
+    // close the "..." menu when clicking elsewhere or pressing Escape
     useEffect(() => {
-        if (orderStatus) setStatus(orderStatus)
-    }, [orderStatus])
+        if (!menuOpen) return
+        const onDown = (e) => { if (menuRef.current && !menuRef.current.contains(e.target)) setMenuOpen(false) }
+        const onKey = (e) => { if (e.key === 'Escape') setMenuOpen(false) }
+        document.addEventListener('mousedown', onDown)
+        document.addEventListener('keydown', onKey)
+        return () => {
+            document.removeEventListener('mousedown', onDown)
+            document.removeEventListener('keydown', onKey)
+        }
+    }, [menuOpen])
 
     const nextOptions = NEXT_STATUS[orderStatus] || []
-    const statusOptions = [orderStatus, ...nextOptions]
+    const menuOptions = nextOptions
     const isRefunded = orderStatus === 'Refunded'
     const isPaid = !!(paymentInfo && paymentInfo.status === 'succeeded')
 
     // items that cannot be shipped yet because the shop does not have enough in stock
     const shortItems = stockDeducted ? [] : orderItems.filter(item => typeof item.stock === 'number' && item.stock < item.quantity)
-    const blocked = shortItems.length > 0 && (status === 'Shipped' || status === 'Delivered')
+    const stockShort = shortItems.length > 0
 
     const copyText = async (text, label) => {
         try {
@@ -102,34 +119,64 @@ const ProcessOrder = () => {
         }
     }
 
-    const updateHandler = async () => {
+    const changeStatus = async (status) => {
         if (saving) return
-        if (!status || status === orderStatus) {
-            toast.info('Pick a different status first', { position: 'bottom-center' })
-            return
-        }
-        if (blocked) {
+        setMenuOpen(false)
+        if (stockShort && needsStock(status)) {
             errMsg('Restock the missing items before shipping this order')
             return
         }
+        // confirmation popup: icon tile, title, short text, Cancel + Confirm side by side
+        const svg = (inner) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${inner}</svg>`
+        const ICONS = {
+            check: svg('<circle cx="12" cy="12" r="10"/><path d="M8 12.5l2.7 2.7L16 9.5"/>'),
+            alert: svg('<circle cx="12" cy="12" r="10"/><path d="M12 7.5v5.5"/><circle cx="12" cy="16.4" r=".6" fill="currentColor"/>'),
+            undo: svg('<polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/>'),
+            truck: svg('<rect x="1" y="4" width="14" height="11"/><polygon points="15 8 19 8 22 11 22 15 15 15 15 8"/><circle cx="5.5" cy="17.5" r="2"/><circle cx="18" cy="17.5" r="2"/>'),
+        }
+        // tone: '' (green) | 'warn' (orange) | 'danger' (red)
+        const askConfirm = (icon, tone, title, text, extra = {}) => Swal.fire({
+            html: `<div class="po-swal-icon ${tone}">${ICONS[icon]}</div>` +
+                `<h3 class="po-swal-title">${title}</h3><p class="po-swal-text">${text}</p>`,
+            showCancelButton: true,
+            showCloseButton: true,
+            confirmButtonText: 'Confirm',
+            cancelButtonText: 'Cancel',
+            buttonsStyling: false,
+            reverseButtons: false,
+            customClass: {
+                container: 'po-swal-bg',
+                popup: 'po-swal',
+                htmlContainer: 'po-swal-body',
+                closeButton: 'po-swal-close',
+                actions: 'po-swal-actions',
+                confirmButton: `po-swal-confirm ${tone}`,
+                cancelButton: 'po-swal-cancel',
+                input: 'po-swal-input',
+            },
+            ...extra,
+        })
+
         const confirmText = {
-            Delivered: ['Mark as delivered?', 'The customer will see this order as delivered.', 'Yes, mark delivered'],
-            Returned: ['Mark as returned?', 'The items will be added back to stock.', 'Yes, mark returned'],
-            Refunded: ['Record this refund?', 'This only records the refund in the store, it does not send any money. Refund the payment in Stripe first. Refunded is final and the order cannot be changed afterwards.', 'Yes, record refund'],
+            Delivered: ['check', '', 'Mark as delivered?', 'The customer will be emailed.'],
+            Returned: ['undo', 'warn', 'Mark as returned?', 'Items go back into stock.'],
+            Refunded: ['alert', 'danger', 'Record this refund?', 'Final. This sends no money, so refund in Stripe first.'],
         }[status]
         if (confirmText) {
-            const result = await Swal.fire({
-                title: confirmText[0],
-                text: confirmText[1],
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonText: confirmText[2],
-                confirmButtonColor: '#7e3d84',
-            })
+            const result = await askConfirm(...confirmText)
             if (!result.isConfirmed) return
         }
         const payload = { status }
-        if (status === 'Shipped' && tracking.trim()) payload.trackingNumber = tracking.trim()
+        if (status === 'Shipped') {
+            // shipping asks for the optional tracking number here
+            const result = await askConfirm('truck', '', 'Mark as shipped?', 'The customer will be emailed.', {
+                input: 'text',
+                inputPlaceholder: 'Tracking number (optional)',
+                inputAttributes: { maxlength: 100 },
+            })
+            if (!result.isConfirmed) return
+            if ((result.value || '').trim()) payload.trackingNumber = result.value.trim()
+        }
         setSaving(true)
         await dispatch(updateOrder(order._id, payload))
         setSaving(false)
@@ -154,7 +201,7 @@ const ProcessOrder = () => {
     // ----- totals (falls back to the item sum for older orders) -----
     const itemsSum = orderItems.reduce((sum, item) => sum + item.price * item.quantity, 0)
     const itemsTotal = itemsPrice || itemsSum
-    const otherCharges = Math.max(0, Number((totalPrice - itemsTotal - (shippingPrice || 0) - (taxPrice || 0)).toFixed(2)) || 0)
+    const otherCharges = Math.max(0, Number((totalPrice - itemsTotal - (shippingPrice || 0) - (taxPrice || 0) + (discountPrice || 0)).toFixed(2)) || 0)
     const taxRate = itemsTotal > 0 && taxPrice > 0 ? Math.round((taxPrice / itemsTotal) * 1000) / 10 : 0
 
     const stockNote = (item) => {
@@ -168,14 +215,47 @@ const ProcessOrder = () => {
         <>
             <MetaData title={`Process Order # ${order && order._id}`} />
             <AdminLayout
-                title="Process order"
-                subtitle="Review the order and update its status"
+                above={<Link to="/admin/orders" className="po-back"><i className="fa fa-arrow-left" aria-hidden="true"></i> Orders</Link>}
+                title={order._id ? (
+                    <span className="po-title">
+                        <span>Order <span className="adm-mono">#{shortId(order._id)}</span></span>
+                        <button type="button" className="po-copy po-no-print" title="Copy full order ID" aria-label="Copy full order ID"
+                            onClick={() => copyText(order._id, 'Order ID')}>
+                            <i className="fa fa-clipboard" aria-hidden="true"></i>
+                        </button>
+                    </span>
+                ) : 'Order'}
+                subtitle={createdAt ? `Placed ${formatDateTime(createdAt)}` : undefined}
                 actions={
                     <div className="po-page-actions">
+                        {orderStatus && (menuOptions.length > 0 ? (
+                            <div className="po-more po-no-print" ref={menuRef}>
+                                <button type="button" className={`adm-pill dot ${statusColor(orderStatus)} po-status-btn`}
+                                    aria-haspopup="menu" aria-expanded={menuOpen} title="Change status"
+                                    onClick={() => setMenuOpen(open => !open)}>
+                                    {orderStatus} <i className="fa fa-chevron-down po-caret" aria-hidden="true"></i>
+                                </button>
+                                {menuOpen && (
+                                    <div className="po-menu" role="menu">
+                                        <p className="po-menu-title">Change status to</p>
+                                        {menuOptions.map(option => (
+                                            <button key={option} type="button" role="menuitem"
+                                                className={option === 'Refunded' ? 'danger' : ''}
+                                                disabled={saving || (stockShort && needsStock(option))}
+                                                onClick={() => changeStatus(option)}>
+                                                <span className="po-menu-label">{option}</span>
+                                                <span className="po-menu-hint">{STATUS_HINT[option]}</span>
+                                            </button>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        ) : (
+                            <span className={`adm-pill dot ${statusColor(orderStatus)} po-status-static`}>{orderStatus}</span>
+                        ))}
                         <button type="button" className="adm-btn" onClick={() => window.print()}>
                             <i className="fa fa-print" aria-hidden="true"></i> Print packing slip
                         </button>
-                        <Link to="/admin/orders" className="adm-btn"><i className="fa fa-arrow-left" aria-hidden="true"></i> Back to orders</Link>
                     </div>
                 }
             >
@@ -183,58 +263,8 @@ const ProcessOrder = () => {
                     <>
                         <p className="po-print-title">Packing slip - order #{shortId(order._id)}, placed {formatDateTime(createdAt)}</p>
 
-                        {/* ---------- header ---------- */}
-                        <div className="po-head">
-                            <div className="po-id">
-                                <span className="po-label">Order</span>
-                                <b className="adm-mono po-id-value">#{shortId(order._id)}</b>
-                                <button type="button" className="po-copy po-no-print" title="Copy full order ID" aria-label="Copy full order ID"
-                                    onClick={() => copyText(order._id, 'Order ID')}>
-                                    <i className="fa fa-clipboard" aria-hidden="true"></i>
-                                </button>
-                            </div>
-                            <span className={`adm-pill dot ${statusColor(orderStatus)}`}>{orderStatus}</span>
-                            <span className="po-muted">Placed {formatDateTime(createdAt)}</span>
-                            {nextOptions.length > 0 && (
-                                <div className="po-head-actions po-no-print">
-                                    {status === 'Shipped' && orderStatus !== 'Shipped' && (
-                                        <input
-                                            type="text"
-                                            className="adm-input po-tracking-input"
-                                            placeholder="Tracking number (optional)"
-                                            aria-label="Tracking number (optional)"
-                                            maxLength={100}
-                                            value={tracking}
-                                            onChange={(e) => setTracking(e.target.value)}
-                                        />
-                                    )}
-                                    <select
-                                        className="adm-select po-select"
-                                        name="status"
-                                        value={status}
-                                        onChange={(e) => setStatus(e.target.value)}
-                                        aria-label="New status"
-                                    >
-                                        {statusOptions.map(option => (
-                                            <option key={option} value={option}>{option}</option>
-                                        ))}
-                                    </select>
-                                    <button type="button" className="adm-btn adm-btn-primary po-update"
-                                        disabled={blocked || saving || status === orderStatus} onClick={updateHandler}>
-                                        {saving ? 'Saving...' : 'Update status'}
-                                    </button>
-                                </div>
-                            )}
-                            {nextOptions.length > 0 && blocked && (
-                                <p className="po-warn po-head-warn po-no-print" role="alert">
-                                    <i className="fa fa-exclamation-triangle" aria-hidden="true"></i>
-                                    Not enough stock to ship: {shortItems.map(item => `${item.name} (${item.stock} left, ordered ${item.quantity})`).join(', ')}. Restock before shipping.
-                                </p>
-                            )}
-                        </div>
-
                         <div className="po-grid">
-                            {/* ---------- left: customer + payment ---------- */}
+                            {/* ---------- left: customer ---------- */}
                             <aside className="po-info">
                                 <section className="po-card">
                                     <h3 className="po-card-title">Customer</h3>
@@ -271,37 +301,9 @@ const ProcessOrder = () => {
                                         )}
                                     </div>
                                 </section>
-
-                                <section className="po-card po-money">
-                                    <h3 className="po-card-title">Payment</h3>
-                                    <dl className="po-kv">
-                                        <dt>Status</dt>
-                                        <dd>
-                                            <span className={`adm-pill dot ${isRefunded ? 'maroon' : isPaid ? 'green' : 'red'}`}>{isRefunded ? 'Refunded' : isPaid ? 'Paid' : 'Not paid'}</span>
-                                            {isPaid && <span className="po-paid-amount">{money(totalPrice)}</span>}
-                                        </dd>
-                                        {paidAt && (<><dt>Paid on</dt><dd>{formatDateTime(paidAt)}</dd></>)}
-                                        <dt className="po-full">Stripe payment</dt>
-                                        <dd className="po-full po-copyline">
-                                            <span className="adm-mono po-break">{paymentInfo && paymentInfo.id ? paymentInfo.id : '—'}</span>
-                                            {paymentInfo && paymentInfo.id && (
-                                                <>
-                                                    <button type="button" className="po-copy" title="Copy Stripe ID" aria-label="Copy Stripe ID"
-                                                        onClick={() => copyText(paymentInfo.id, 'Stripe ID')}>
-                                                        <i className="fa fa-clipboard" aria-hidden="true"></i>
-                                                    </button>
-                                                    <a className="po-copy" href={stripePaymentUrl(paymentInfo.id)} target="_blank" rel="noopener noreferrer"
-                                                        title="Open in Stripe" aria-label="Open this payment in Stripe">
-                                                        <i className="fa fa-external-link" aria-hidden="true"></i>
-                                                    </a>
-                                                </>
-                                            )}
-                                        </dd>
-                                    </dl>
-                                </section>
                             </aside>
 
-                            {/* ---------- right: status + items ---------- */}
+                            {/* ---------- right: progress + actions + items + payment ---------- */}
                             <div className="po-main">
                                 <section className="po-card">
                                     <div className="po-progress po-no-print">
@@ -324,11 +326,18 @@ const ProcessOrder = () => {
                                         <p className="po-tracking">
                                             <span className="po-label">Tracking number</span>
                                             <b className="adm-mono">{trackingNumber}</b>
-                                            <button type="button" className="po-copy po-no-print" title="Copy tracking number" aria-label="Copy tracking number"
-                                                onClick={() => copyText(trackingNumber, 'Tracking number')}>
-                                                <i className="fa fa-clipboard" aria-hidden="true"></i>
-                                            </button>
                                         </p>
+                                    )}
+
+                                    {nextOptions.length > 0 && (
+                                        <>
+                                            {stockShort && nextOptions.some(needsStock) && (
+                                                <p className="po-warn po-actions-warn" role="alert">
+                                                    <i className="fa fa-exclamation-triangle" aria-hidden="true"></i>
+                                                    Not enough stock to ship: {shortItems.map(item => `${item.name} (${item.stock} left, ordered ${item.quantity})`).join(', ')}. Restock before shipping.
+                                                </p>
+                                            )}
+                                        </>
                                     )}
 
                                     {isRefunded && (
@@ -378,11 +387,20 @@ const ProcessOrder = () => {
 
                                     <dl className="po-totals po-money">
                                         <div><dt>Items subtotal</dt><dd>{money(itemsTotal)}</dd></div>
+                                        {discountPrice > 0 && <div><dt>Voucher{voucher && voucher.code ? ` (${voucher.code})` : ''}</dt><dd>-{money(discountPrice)}</dd></div>}
                                         <div><dt>Shipping</dt><dd>{shippingPrice ? money(shippingPrice) : 'Free'}</dd></div>
                                         <div><dt>Tax{taxRate ? ` (${taxRate}%)` : ''}</dt><dd>{money(taxPrice)}</dd></div>
                                         {otherCharges > 0 && <div><dt>Other charges</dt><dd>{money(otherCharges)}</dd></div>}
                                         <div className="po-grand"><dt>Grand total</dt><dd>{money(totalPrice)}</dd></div>
                                     </dl>
+
+                                    <div className="po-payline po-money">
+                                        <span className={`adm-pill dot ${isRefunded ? 'maroon' : isPaid ? 'green' : 'red'}`}>{isRefunded ? 'Refunded' : isPaid ? 'Paid' : 'Not paid'}</span>
+                                        {paidAt && <span>Paid on {formatDateTime(paidAt)}</span>}
+                                        {paymentInfo && paymentInfo.id && (
+                                            <span className="po-payid">Payment ID <span className="adm-mono po-break">{paymentInfo.id}</span></span>
+                                        )}
+                                    </div>
                                 </section>
                             </div>
                         </div>

@@ -1,7 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import axios from 'axios'
-import Swal from 'sweetalert2'
 import { toast } from 'react-toastify'
 import 'react-toastify/dist/ReactToastify.css'
 
@@ -10,6 +9,7 @@ import Loader from '../Layout/Loader'
 import AdminLayout from './AdminLayout'
 import DataTable from './DataTable'
 import { money } from './adminHelpers'
+import { confirmRestore, confirmPermanent } from '../../Utils/confirmDialog'
 
 const API = import.meta.env.VITE_API
 
@@ -34,7 +34,8 @@ const TrashProducts = () => {
 
     useEffect(() => { load() }, [load])
 
-    const restore = async (id) => {
+    const restore = async (id, name) => {
+        if (!(await confirmRestore(`Restore "${name}"?`, 'It will go back to the products list.'))) return
         try {
             await axios.put(`${API}/admin/product/${id}/restore`, {}, { withCredentials: true })
             toast.success('Product restored', { position: 'bottom-right' })
@@ -47,15 +48,11 @@ const TrashProducts = () => {
 
     // Permanent delete for one or many products (ids = array of _id)
     const permanentDelete = async (ids, label) => {
-        const result = await Swal.fire({
-            title: 'Delete permanently?',
-            text: `${label} will be removed for good, including its photos. This cannot be undone.`,
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonText: 'Yes, delete forever',
-            confirmButtonColor: RED,
-        })
-        if (!result.isConfirmed) return
+        const ok = await confirmPermanent(
+            'Delete permanently?',
+            `${label} will be removed for good, including its photos. This cannot be undone.`,
+        )
+        if (!ok) return
 
         try {
             const { data } = await axios.delete(`${API}/admin/products/permanent`, {
@@ -86,7 +83,7 @@ const TrashProducts = () => {
             key: 'actions', label: '',
             render: (p) => (
                 <div className="adm-actions">
-                    <button className="adm-icon-btn" title="Restore" onClick={() => restore(p._id)}>
+                    <button className="adm-icon-btn" title="Restore" onClick={() => restore(p._id, p.name)}>
                         <i className="fa fa-undo"></i>
                     </button>
                     <button
