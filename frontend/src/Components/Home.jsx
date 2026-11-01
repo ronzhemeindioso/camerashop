@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { useParams } from 'react-router-dom'
+import { useParams, useSearchParams } from 'react-router-dom'
 import MetaData from './Layout/MetaData'
 import Product from './Product/Product'
 import Loader from './Layout/Loader'
@@ -9,6 +9,7 @@ import { useDispatch, useSelector } from 'react-redux'
 
 import { getProducts, loadMoreProducts, setProductFilters, resetProductFilters } from '../actions/productActions'
 import { PRODUCT_CATEGORIES } from '../validation/schemas'
+import PageBanner from './PageBanner'
 
 const PURPLE = '#7e3d84'
 
@@ -24,6 +25,7 @@ const Home = () => {
     const [viewMode, setViewMode] = useState('scroll')
     const sentinelRef = useRef(null)
     let { keyword } = useParams();
+    const [searchParams] = useSearchParams();
     const dispatch = useDispatch();
 
     // a new search starts again from page 1
@@ -37,6 +39,14 @@ const Home = () => {
     const count = filteredProductsCount
 
     const filters = { minRating, minReviews }
+
+    // arriving from a category tile on the home page (/shop?category=Lenses)
+    const categoryFromUrl = searchParams.get('category')
+    useEffect(() => {
+        if (categoryFromUrl && PRODUCT_CATEGORIES.includes(categoryFromUrl)) {
+            dispatch(setProductFilters({ category: categoryFromUrl }))
+        }
+    }, [categoryFromUrl, dispatch]);
 
     useEffect(() => {
         if (viewMode === 'scroll' && currentPage > 1) {
@@ -102,125 +112,113 @@ const Home = () => {
 
     const anyFilter = priceIsFiltered || minRating > 0 || minReviews > 0 || category !== ''
 
+    // one small tag for each filter that is switched on
+    const chips = []
+    if (category) chips.push({ label: category, remove: () => applyCategory('') })
+    if (priceIsFiltered) chips.push({ label: `$${price[0]} - $${price[1]}`, remove: resetPrice })
+    if (minRating > 0) chips.push({ label: `${minRating}+ stars`, remove: () => applyRating(minRating) })
+    if (minReviews > 0) chips.push({ label: `${minReviews}+ reviews`, remove: () => applyMinReviews(0) })
+
     return (
         <>
             <MetaData title={'shop Here'} />
 
-            {!keyword && (
-                <section className="store-hero">
-                    <div className="store-hero-inner">
-                        <div className="store-hero-copy">
-                            <h1>Camera gear for every shot</h1>
-                            <p>Cameras, lenses, lighting and accessories, with secure checkout and order tracking.</p>
-                            <a href="#products" className="store-hero-btn">Shop latest products</a>
-                        </div>
-                        <div className="store-hero-lens" aria-hidden="true">
-                            <span></span>
-                        </div>
-                    </div>
-                </section>
-            )}
+            <PageBanner
+                crumb={keyword ? 'Search' : 'Shop'}
+                title={keyword ? `Results for "${keyword}"` : category ? category : 'Shop all products'}
+                text={keyword ? 'Products matching your search.' : 'Filter by category, price, rating and reviews.'}
+            />
 
             <div className="store-layout" id="products">
                 <aside className="store-sidebar">
-                    <div className="filter-card">
-                        <h2>Category</h2>
-                        <select
-                            className="form-control"
-                            value={category}
-                            onChange={(e) => applyCategory(e.target.value)}
-                            aria-label="Category"
-                        >
-                            <option value="">All categories</option>
-                            {PRODUCT_CATEGORIES.map(c => (
-                                <option key={c} value={c}>{c}</option>
-                            ))}
-                        </select>
-                    </div>
-
-                    <div className="filter-card">
-                        <h2>Price</h2>
-                        <Slider
-                            getAriaLabel={() => 'Price filter'}
-                            value={priceDraft}
-                            onChange={(e, v) => setPriceDraft(v)}
-                            onChangeCommitted={applyPrice}
-                            valueLabelDisplay="auto"
-                            getAriaValueText={(v) => `$${v}`}
-                            min={1}
-                            max={1000}
-                            sx={{ color: PURPLE, mt: 1 }}
-                        />
-                        <div className="filter-range">
-                            <span>${priceDraft[0]}</span>
-                            <span>${priceDraft[1]}</span>
+                    <div className="shop-filters">
+                        <div className="shop-filters-head">
+                            <h2>Filters</h2>
+                            {anyFilter && <button type="button" onClick={clearAllFilters}>Clear all</button>}
                         </div>
-                        {priceIsFiltered && (
-                            <button type="button" className="filter-clear" onClick={resetPrice}>Clear price filter</button>
-                        )}
-                    </div>
 
-                    <div className="filter-card">
-                        <h2>Rating</h2>
-                        {[4, 3, 2, 1].map(stars => (
-                            <label key={stars} style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', marginBottom: 6 }}>
-                                <input
-                                    type="radio"
-                                    name="ratingFilter"
-                                    checked={minRating === stars}
-                                    onChange={() => applyRating(stars)}
-                                    onClick={() => { if (minRating === stars) applyRating(stars) }}
-                                />
-                                <span aria-label={`${stars} stars and up`}>
-                                    {'★'.repeat(stars)}<span style={{ color: '#ccc' }}>{'★'.repeat(5 - stars)}</span> &amp; up
-                                </span>
-                            </label>
-                        ))}
-                    </div>
+                        {/* each section opens and closes when you click its title */}
+                        <details className="shop-filter" open>
+                            <summary>Category</summary>
+                            <ul className="shop-list">
+                                <li><button type="button" className={category === '' ? 'on' : ''} onClick={() => applyCategory('')}>All categories</button></li>
+                                {PRODUCT_CATEGORIES.map(c => (
+                                    <li key={c}>
+                                        <button type="button" className={category === c ? 'on' : ''} onClick={() => applyCategory(c)}>{c}</button>
+                                    </li>
+                                ))}
+                            </ul>
+                        </details>
 
-                    <div className="filter-card">
-                        <h2>Reviews</h2>
-                        <select
-                            className="form-control"
-                            value={minReviews}
-                            onChange={(e) => applyMinReviews(e.target.value)}
-                            aria-label="Minimum number of reviews"
-                        >
-                            <option value={0}>Any number of reviews</option>
-                            <option value={1}>1+ reviews</option>
-                            <option value={5}>5+ reviews</option>
-                            <option value={10}>10+ reviews</option>
-                        </select>
-                    </div>
+                        <details className="shop-filter" open>
+                            <summary>Price</summary>
+                            <Slider
+                                getAriaLabel={() => 'Price filter'}
+                                value={priceDraft}
+                                onChange={(e, v) => setPriceDraft(v)}
+                                onChangeCommitted={applyPrice}
+                                valueLabelDisplay="auto"
+                                getAriaValueText={(v) => `$${v}`}
+                                min={1}
+                                max={1000}
+                                sx={{ color: PURPLE, mt: 1 }}
+                            />
+                            <div className="filter-range">
+                                <span>${priceDraft[0]}</span>
+                                <span>${priceDraft[1]}</span>
+                            </div>
+                        </details>
 
-                    {anyFilter && (
-                        <button type="button" className="filter-clear" onClick={clearAllFilters}>Clear all filters</button>
-                    )}
+                        <details className="shop-filter" open>
+                            <summary>Rating</summary>
+                            <ul className="shop-list">
+                                {[4, 3, 2, 1].map(stars => (
+                                    <li key={stars}>
+                                        <button type="button" className={minRating === stars ? 'on' : ''} onClick={() => applyRating(stars)} aria-label={`${stars} stars and up`}>
+                                            <span className="stars-gold">{'★'.repeat(stars)}<span className="off">{'★'.repeat(5 - stars)}</span></span>
+                                            <span>&amp; up</span>
+                                        </button>
+                                    </li>
+                                ))}
+                            </ul>
+                        </details>
+
+                        <details className="shop-filter" open>
+                            <summary>Reviews</summary>
+                            <div className="shop-seg">
+                                {[[0, 'Any'], [1, '1+'], [5, '5+'], [10, '10+']].map(([n, label]) => (
+                                    <button key={n} type="button" className={minReviews === n ? 'on' : ''} onClick={() => applyMinReviews(n)}>{label}</button>
+                                ))}
+                            </div>
+                        </details>
+                    </div>
                 </aside>
 
                 <section className="store-results">
-                    <div className="store-toolbar">
-                        <h1 id="products_heading">{keyword ? `Results for "${keyword}"` : 'Latest Products'}</h1>
-                        {!loading && <span className="store-count">{count} {count === 1 ? 'product' : 'products'}</span>}
+                    <div className="shop-bar">
+                        <div>
+                            <h2 className="shop-title">{keyword ? `Results for "${keyword}"` : category || 'All products'}</h2>
+                            {!loading && <p className="shop-count">{count} {count === 1 ? 'product' : 'products'}</p>}
+                        </div>
+                        <div className="shop-view">
+                            <span>View</span>
+                            <div className="shop-seg">
+                                <button type="button" className={viewMode === 'scroll' ? 'on' : ''} onClick={() => changeViewMode('scroll')}>Infinite scroll</button>
+                                <button type="button" className={viewMode === 'pages' ? 'on' : ''} onClick={() => changeViewMode('pages')}>Pages</button>
+                            </div>
+                        </div>
                     </div>
 
-                    <div style={{ display: 'flex', gap: 8, margin: '0 0 16px' }}>
-                        {[['scroll', 'Infinite scroll'], ['pages', 'Pages']].map(([mode, label]) => (
-                            <button
-                                key={mode}
-                                type="button"
-                                onClick={() => changeViewMode(mode)}
-                                style={{
-                                    padding: '6px 14px', borderRadius: 999, cursor: 'pointer', fontSize: 14,
-                                    border: `1px solid ${PURPLE}`,
-                                    background: viewMode === mode ? PURPLE : '#fff',
-                                    color: viewMode === mode ? '#fff' : PURPLE,
-                                }}
-                            >
-                                {label}
-                            </button>
-                        ))}
-                    </div>
+                    {/* the filters that are switched on, click one to remove it */}
+                    {chips.length > 0 && (
+                        <div className="shop-chips">
+                            {chips.map(chip => (
+                                <button key={chip.label} type="button" className="shop-chip" onClick={chip.remove}>
+                                    {chip.label} <b>&times;</b>
+                                </button>
+                            ))}
+                        </div>
+                    )}
 
                     {loading ? (
                         <div className="store-loading"><Loader /></div>
@@ -239,7 +237,7 @@ const Home = () => {
                     )}
 
                     {viewMode === 'scroll' && !loading && products.length > 0 && (
-                        <div ref={sentinelRef} style={{ textAlign: 'center', padding: '24px 0', color: '#7e3d84' }}>
+                        <div ref={sentinelRef} className="shop-end">
                             {loadingMore ? 'Loading more products...' : hasMore ? '' : "You've reached the end"}
                         </div>
                     )}
@@ -256,7 +254,7 @@ const Home = () => {
                                 showLastButton
                                 size="large"
                                 sx={{
-                                    '& .MuiPaginationItem-root': { color: '#5a2a61', borderColor: '#e6d8ef', backgroundColor: '#fff' },
+                                    '& .MuiPaginationItem-root': { color: '#5a2a61', borderColor: '#e8dfd0', backgroundColor: '#fff', borderRadius: '2px' },
                                     '& .MuiPaginationItem-root.Mui-selected': { backgroundColor: PURPLE, color: '#fff', borderColor: PURPLE },
                                     '& .MuiPaginationItem-root.Mui-selected:hover': { backgroundColor: '#652f6b' },
                                 }}

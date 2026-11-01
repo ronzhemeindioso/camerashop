@@ -7,10 +7,10 @@ import { logout } from '../../actions/userActions'
 import Search from './Search'
 
 const navLinks = [
-    { to: '/', hash: '', label: 'Home' },
+    { to: '/', label: 'Home' },
     { to: '/shop', label: 'Shop' },
-    { to: '/#about', hash: '#about', label: 'About' },
-    { to: '/#contact', hash: '#contact', label: 'Contact' },
+    { to: '/about', label: 'About' },
+    { to: '/contact', label: 'Contact' },
 ]
 
 const ANNOUNCE_KEY = 'announceDismissed'
@@ -18,7 +18,7 @@ const ANNOUNCE_KEY = 'announceDismissed'
 const Header = () => {
     const dispatch = useDispatch();
     const navigate = useNavigate();
-    const { pathname, hash } = useLocation();
+    const { pathname } = useLocation();
     const { user } = useSelector(state => state.auth)
     const { cartItems } = useSelector(state => state.cart)
     const [open, setOpen] = useState(false)
@@ -55,8 +55,8 @@ const Header = () => {
 
     const isActive = (link) =>
         link.to === '/shop'
-            ? pathname === '/shop'
-            : pathname === '/' && hash === link.hash
+            ? pathname === '/shop' || pathname.startsWith('/search')
+            : pathname === link.to
 
     // highlight the account menu while the user is on one of their account pages
     const onAccountPage = pathname === '/me' || pathname.startsWith('/me/')

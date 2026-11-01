@@ -14,12 +14,13 @@ const Footer = () => {
                 </div>
 
                 <nav className="footer-links" aria-label="Footer">
+                    <Link to="/">Home</Link>
                     <Link to="/shop">Shop</Link>
                     {isAuthenticated
                         ? <Link to="/orders/me">Your orders</Link>
                         : <Link to="/login">Log in</Link>}
-                    <Link to="/#about">About</Link>
-                    <Link to="/#contact">Contact</Link>
+                    <Link to="/about">About</Link>
+                    <Link to="/contact">Contact</Link>
                 </nav>
             </div>
 

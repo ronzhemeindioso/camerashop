@@ -39,7 +39,10 @@ import UpdateUser from './Components/Admin/UpdateUser';
 import ProtectedRoute from './Components/Route/ProtectedRoute';
 import ProductReviews from './Components/Admin/ProductReviews';
 import UpdateProduct from './Components/Admin/UpdateProduct';
-import HomePage from './Components/HomePage'
+import Landing from './Components/Landing'
+import About from './Components/About'
+import Contact from './Components/Contact'
+import './storefront.css'
 import TrashProducts from './Components/Admin/TrashProducts'
 import TrashUsers from './Components/Admin/TrashUsers'
 import NewUser from './Components/Admin/NewUser'
@@ -134,9 +137,10 @@ function App() {
         {/* <Header cartItems={state.cartItems} /> */}
         <Header />
         <Routes>
-          <Route path="/" element={<Home />} exact="true" />
-          <Route path="/" element={<HomePage />} exact="true" />
+          <Route path="/" element={<Landing />} exact="true" />
           <Route path="/shop" element={<Home />} />
+          <Route path="/about" element={<About />} />
+          <Route path="/contact" element={<Contact />} />
           {/* <Route path="/product/:id" element={<ProductDetails cartItems={state.cartItems} addItemToCart={addItemToCart} />} exact="true" /> */}
           <Route path="/product/:id" element={<ProductDetails />} exact="true" />
           <Route path="/search/:keyword" element={<Home />} exact="true" />
