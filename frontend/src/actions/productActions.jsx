@@ -21,10 +21,19 @@ import {
     DELETE_PRODUCT_FAIL,
 
 
+    REVIEW_ELIGIBILITY_REQUEST,
+    REVIEW_ELIGIBILITY_SUCCESS,
+    REVIEW_ELIGIBILITY_FAIL,
+    NEW_REVIEW_REQUEST,
+    NEW_REVIEW_SUCCESS,
+    NEW_REVIEW_FAIL,
+    SET_PRODUCT_FILTERS,
+    RESET_PRODUCT_FILTERS,
     CLEAR_ERRORS
 } from '../constants/productConstants';
 
-export const getProducts = (currentPage = 1, keyword = '', price, category = '') => async (dispatch) => {
+// filters: { minRating, minReviews } - both optional (0 / undefined = no filter)
+export const getProducts = (currentPage = 1, keyword = '', price, category = '', filters = {}) => async (dispatch) => {
     try {
         dispatch({
             type: ALL_PRODUCTS_REQUEST
@@ -33,10 +42,15 @@ export const getProducts = (currentPage = 1, keyword = '', price, category = '')
         let link = `${import.meta.env.VITE_API}/products?page=${currentPage}&keyword=${keyword}&price[lte]=${price[1]}&price[gte]=${price[0]}`
 
         if (category) {
-            link = `${import.meta.env.VITE_API}/products?keyword=${keyword}&page=${currentPage}&price[lte]=${price[1]}&price[gte]=${price[0]}&category=${category}`
+            link += `&category=${category}`
+        }
+        if (filters.minRating > 0) {
+            link += `&ratings[gte]=${filters.minRating}`
+        }
+        if (filters.minReviews > 0) {
+            link += `&numOfReviews[gte]=${filters.minReviews}`
         }
         const { data } = await axios.get(link)
-        console.log(data)
         dispatch({
             type: ALL_PRODUCTS_SUCCESS,
             payload: data
@@ -45,7 +59,51 @@ export const getProducts = (currentPage = 1, keyword = '', price, category = '')
     } catch (error) {
         dispatch({
             type: ALL_PRODUCTS_FAIL,
-            payload: error.response.data.message
+            payload: error.response?.data?.message || error.message
+        })
+    }
+}
+
+// keeps the rating / review-count filters in the Redux store
+export const setProductFilters = (filters) => (dispatch) => {
+    dispatch({ type: SET_PRODUCT_FILTERS, payload: filters })
+}
+
+export const resetProductFilters = () => (dispatch) => {
+    dispatch({ type: RESET_PRODUCT_FILTERS })
+}
+
+// Has this user received the product (so they may review it)? Also returns their existing review.
+export const checkReviewEligibility = (productId) => async (dispatch) => {
+    try {
+        dispatch({ type: REVIEW_ELIGIBILITY_REQUEST })
+        const { data } = await axios.get(
+            `${import.meta.env.VITE_API}/review/eligibility?productId=${productId}`,
+            { withCredentials: true }
+        )
+        dispatch({ type: REVIEW_ELIGIBILITY_SUCCESS, payload: data })
+    } catch (error) {
+        dispatch({
+            type: REVIEW_ELIGIBILITY_FAIL,
+            payload: error.response?.data?.message || error.message
+        })
+    }
+}
+
+// create or update the logged-in user's review
+export const submitReview = (reviewData) => async (dispatch) => {
+    try {
+        dispatch({ type: NEW_REVIEW_REQUEST })
+        const { data } = await axios.put(
+            `${import.meta.env.VITE_API}/review`,
+            reviewData,
+            { headers: { 'Content-Type': 'application/json' }, withCredentials: true }
+        )
+        dispatch({ type: NEW_REVIEW_SUCCESS, payload: data })
+    } catch (error) {
+        dispatch({
+            type: NEW_REVIEW_FAIL,
+            payload: error.response?.data?.message || error.message
         })
     }
 }

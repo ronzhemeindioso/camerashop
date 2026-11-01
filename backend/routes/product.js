@@ -16,6 +16,7 @@ const {
     restoreProduct,
     getProductReviews,
     createProductReview,
+    reviewEligibility,
     deleteReview,
     productSales,
 
@@ -37,6 +38,7 @@ router.put('/admin/product/:id/restore', isAuthenticatedUser, authorizeRoles('ad
 router.get('/products', getProducts)
 
 router.put('/review', isAuthenticatedUser, createProductReview);
+router.get('/review/eligibility', isAuthenticatedUser, reviewEligibility);
 router.get('/reviews', isAuthenticatedUser, getProductReviews)
 router.delete('/reviews', isAuthenticatedUser, authorizeRoles('admin'), deleteReview)
 router.get('/admin/product-sales', isAuthenticatedUser, authorizeRoles('admin'), productSales);

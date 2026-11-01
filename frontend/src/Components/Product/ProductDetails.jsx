@@ -4,12 +4,11 @@ import MetaData from '../Layout/MetaData'
 import { Carousel } from 'react-bootstrap'
 
 import 'react-toastify/dist/ReactToastify.css';
-import axios from 'axios'
-
-import { getUser, getToken, successMsg, errMsg } from '../../Utils/helpers'
+import { successMsg, errMsg } from '../../Utils/helpers'
 import ListReviews from '../Review/ListReviews';
 import { useDispatch, useSelector } from 'react-redux'
-import { getProductDetails, clearErrors, } from '../../actions/productActions'
+import { getProductDetails, clearErrors, checkReviewEligibility, submitReview } from '../../actions/productActions'
+import { NEW_REVIEW_RESET } from '../../constants/productConstants'
 import { addItemToCart } from '../../actions/cartActions'
 const ProductDetails = () => {
 
@@ -19,8 +18,9 @@ const ProductDetails = () => {
     const [quantity, setQuantity] = useState(1)
     const [rating, setRating] = useState(0)
     const [comment, setComment] = useState('')
-    const [errorReview, setErrorReview] = useState('');
-    const [success, setSuccess] = useState('')
+    // review state comes from Redux: can this user review, and the result of submitting
+    const { canReview, hasReviewed, review: myReview } = useSelector(state => state.reviewEligibility)
+    const { success: reviewSuccess, error: reviewError, updated: reviewUpdated, masked: reviewMasked } = useSelector(state => state.newReview)
     // const [user, setUser] = useState(getUser())
 
     let { id } = useParams()
@@ -57,9 +57,17 @@ const ProductDetails = () => {
     // }
 
     function setUserRatings() {
+        // pre-fill the form with the user's existing review (if any) so it can be edited
+        const currentRating = myReview ? myReview.rating : rating
+        if (myReview) {
+            setRating(myReview.rating)
+            setComment(myReview.comment)
+        }
         const stars = document.querySelectorAll('.star');
         stars.forEach((star, index) => {
             star.starValue = index + 1;
+            // pre-light the stars of an existing rating so it can be edited
+            star.classList.toggle('orange', index < currentRating);
             ['click', 'mouseover', 'mouseout'].forEach(function (e) {
                 star.addEventListener(e, showRatings);
             })
@@ -88,31 +96,28 @@ const ProductDetails = () => {
         }
     }
 
-    const newReview = async (reviewData) => {
-        try {
-            const config = {
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${getToken()}`
-                }
-            }
-
-            const { data } = await axios.put(`${import.meta.env.VITE_API}/review`, reviewData, config)
-            setSuccess(data.success)
-
-        } catch (error) {
-            setErrorReview(error.response.data.message)
-        }
-    }
-
     const reviewHandler = () => {
-        const formData = new FormData();
-        formData.set('rating', rating);
-        formData.set('comment', comment);
-        formData.set('productId', id);
-        newReview(formData)
-
+        dispatch(submitReview({ rating, comment, productId: id }))
     }
+
+    // check whether this user may review the product (needs a delivered order) and load their review
+    useEffect(() => {
+        if (user) dispatch(checkReviewEligibility(id))
+    }, [id, user]);
+
+    useEffect(() => {
+        if (reviewError) {
+            errMsg(reviewError)
+            dispatch(clearErrors())
+        }
+        if (reviewSuccess) {
+            successMsg(reviewUpdated ? 'Review updated' : 'Review submitted')
+            if (reviewMasked) errMsg('Some words in your review were masked')
+            dispatch({ type: NEW_REVIEW_RESET })
+            dispatch(getProductDetails(id))
+            dispatch(checkReviewEligibility(id))
+        }
+    }, [reviewError, reviewSuccess]);
 
     // useEffect(() => {
     //     productDetails(id)
@@ -168,9 +173,11 @@ const ProductDetails = () => {
                         {product.seller && <> &middot; Sold by {product.seller}</>}
                     </p>
 
-                    {user
-                        ? <button type="button" className="pd-review-btn" data-toggle="modal" data-target="#ratingModal" onClick={setUserRatings}>Write a review</button>
-                        : <p className="pd-login-note"><Link to="/login">Log in</Link> to write a review.</p>}
+                    {!user
+                        ? <p className="pd-login-note"><Link to="/login">Log in</Link> to write a review.</p>
+                        : canReview
+                            ? <button type="button" className="pd-review-btn" data-toggle="modal" data-target="#ratingModal" onClick={setUserRatings}>{hasReviewed ? 'Edit your review' : 'Write a review'}</button>
+                            : <p className="pd-login-note">Only customers with a delivered order can review this product.</p>}
 
                     <div className="row mt-2 mb-5">
                         <div className="rating w-50">
@@ -179,7 +186,7 @@ const ProductDetails = () => {
                                 <div className="modal-dialog" role="document">
                                     <div className="modal-content">
                                         <div className="modal-header">
-                                            <h5 className="modal-title" id="ratingModalLabel">Submit Review</h5>
+                                            <h5 className="modal-title" id="ratingModalLabel">{hasReviewed ? 'Edit Review' : 'Submit Review'}</h5>
                                             <button type="button" className="close" data-dismiss="modal" aria-label="Close">
                                                 <span aria-hidden="true">&times;</span>
                                             </button>

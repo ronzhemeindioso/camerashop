@@ -6,6 +6,9 @@ import {
     productDetailsReducer,
     newProductReducer,
     productReducer,
+    productFiltersReducer,
+    reviewEligibilityReducer,
+    newReviewReducer,
 
 
 
@@ -56,7 +59,9 @@ const reducer = combineReducers({
     myOrders: myOrdersReducer,
     orderDetails: orderDetailsReducer,
     product: productReducer,
-    // newReview: newReviewReducer,
+    newReview: newReviewReducer,
+    reviewEligibility: reviewEligibilityReducer,
+    productFilters: productFiltersReducer,
     allOrders: allOrdersReducer,
     order: orderReducer,
     // allUsers: allUsersReducer,

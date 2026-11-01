@@ -22,6 +22,16 @@ import {
     DELETE_PRODUCT_SUCCESS,
     DELETE_PRODUCT_FAIL,
     DELETE_PRODUCT_RESET,
+    REVIEW_ELIGIBILITY_REQUEST,
+    REVIEW_ELIGIBILITY_SUCCESS,
+    REVIEW_ELIGIBILITY_FAIL,
+    REVIEW_ELIGIBILITY_RESET,
+    NEW_REVIEW_REQUEST,
+    NEW_REVIEW_SUCCESS,
+    NEW_REVIEW_FAIL,
+    NEW_REVIEW_RESET,
+    SET_PRODUCT_FILTERS,
+    RESET_PRODUCT_FILTERS,
     CLEAR_ERRORS
 } from '../constants/productConstants'
 
@@ -227,3 +237,62 @@ export const productReducer = (state = {}, action) => {
 //     }
 
 // }
+
+
+// rating / review-count filters used on the home page
+export const productFiltersReducer = (state = { minRating: 0, minReviews: 0 }, action) => {
+    switch (action.type) {
+        case SET_PRODUCT_FILTERS:
+            return { ...state, ...action.payload }
+        case RESET_PRODUCT_FILTERS:
+            return { minRating: 0, minReviews: 0 }
+        default:
+            return state
+    }
+}
+
+// can the logged-in user review the product being viewed?
+export const reviewEligibilityReducer = (state = { canReview: false, hasReviewed: false, review: null }, action) => {
+    switch (action.type) {
+        case REVIEW_ELIGIBILITY_REQUEST:
+            return { ...state, loading: true }
+        case REVIEW_ELIGIBILITY_SUCCESS:
+            return {
+                loading: false,
+                canReview: action.payload.canReview,
+                hasReviewed: action.payload.hasReviewed,
+                review: action.payload.review
+            }
+        case REVIEW_ELIGIBILITY_FAIL:
+            return { loading: false, canReview: false, hasReviewed: false, review: null, error: action.payload }
+        case REVIEW_ELIGIBILITY_RESET:
+            return { canReview: false, hasReviewed: false, review: null }
+        case CLEAR_ERRORS:
+            return { ...state, error: null }
+        default:
+            return state
+    }
+}
+
+// submitting (creating / updating) a review
+export const newReviewReducer = (state = {}, action) => {
+    switch (action.type) {
+        case NEW_REVIEW_REQUEST:
+            return { ...state, loading: true }
+        case NEW_REVIEW_SUCCESS:
+            return {
+                loading: false,
+                success: action.payload.success,
+                updated: action.payload.updated,
+                masked: action.payload.masked
+            }
+        case NEW_REVIEW_FAIL:
+            return { ...state, loading: false, error: action.payload }
+        case NEW_REVIEW_RESET:
+            return {}
+        case CLEAR_ERRORS:
+            return { ...state, error: null }
+        default:
+            return state
+    }
+}

@@ -46,7 +46,17 @@ class APIFeatures {
             delete queryCopy['price[lte]'];
         }
 
-        console.log(queryCopy);
+        // ratings filter: ?ratings[gte]=4  ->  products whose average rating is 4 or higher
+        const minRating = Number(queryCopy['ratings[gte]']);
+        if (minRating > 0) {
+            priceFilter.ratings = { $gte: Math.min(minRating, 5) };
+        }
+
+        // review filter: ?numOfReviews[gte]=5  ->  products with at least 5 reviews
+        const minReviews = Number(queryCopy['numOfReviews[gte]']);
+        if (minReviews > 0) {
+            priceFilter.numOfReviews = { $gte: minReviews };
+        }
 
         this.query = this.query.find(priceFilter);
         return this;

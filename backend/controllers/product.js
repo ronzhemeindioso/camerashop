@@ -3,6 +3,7 @@ const Product = require('../models/product')
 const Order = require('../models/order')
 const cloudinary = require('cloudinary')
 const APIFeatures = require('../utils/apiFeatures');
+const { maskBadWords } = require('../utils/badWords');
 
 exports.newProduct = async (req, res, next) => {
     try {
@@ -321,38 +322,87 @@ exports.restoreProduct = async (req, res, next) => {
     })
 }
 
+// A customer may review a product only after an order containing it has been Delivered.
+const hasDeliveredOrder = (userId, productId) => Order.exists({
+    user: userId,
+    orderStatus: 'Delivered',
+    'orderItems.product': productId
+})
+
+// Can the logged-in user review this product?  =>  GET /api/v1/review/eligibility?productId=<id>
+// Also returns their existing review (if any) so the form can be pre-filled for editing.
+exports.reviewEligibility = async (req, res, next) => {
+    const { productId } = req.query
+    if (!mongoose.Types.ObjectId.isValid(productId)) {
+        return res.status(400).json({ success: false, message: 'Invalid product id' })
+    }
+    const product = await Product.findOne({ _id: productId, deletedAt: null })
+    if (!product) {
+        return res.status(404).json({ success: false, message: 'Product not found' })
+    }
+    const purchased = !!(await hasDeliveredOrder(req.user._id, productId))
+    const existing = product.reviews.find(r => r.user.toString() === req.user._id.toString())
+    return res.status(200).json({
+        success: true,
+        canReview: purchased,
+        hasReviewed: !!existing,
+        review: existing ? { rating: existing.rating, comment: existing.comment } : null
+    })
+}
+
+// Create or update the logged-in user's review  =>  PUT /api/v1/review
 exports.createProductReview = async (req, res, next) => {
     const { rating, comment, productId } = req.body;
-    const review = {
-        user: req.user._id,
-        name: req.user.name,
-        rating: Number(rating),
-        comment
+    const stars = Number(rating)
+
+    if (!mongoose.Types.ObjectId.isValid(productId)) {
+        return res.status(400).json({ success: false, message: 'Invalid product id' })
     }
-    const product = await Product.findById(productId);
-    const isReviewed = product.reviews.find(
+    if (!Number.isInteger(stars) || stars < 1 || stars > 5) {
+        return res.status(400).json({ success: false, message: 'Please choose a rating from 1 to 5' })
+    }
+    if (typeof comment !== 'string' || !comment.trim()) {
+        return res.status(400).json({ success: false, message: 'Please write a comment' })
+    }
+
+    const product = await Product.findOne({ _id: productId, deletedAt: null });
+    if (!product) {
+        return res.status(404).json({ success: false, message: 'Product not found' })
+    }
+
+    // only customers who actually received the product can review it
+    if (!(await hasDeliveredOrder(req.user._id, productId))) {
+        return res.status(403).json({
+            success: false,
+            message: 'You can only review products from an order that has been delivered'
+        })
+    }
+
+    // bad words are masked before the review is saved
+    const cleanComment = maskBadWords(comment.trim())
+
+    const existing = product.reviews.find(
         r => r.user.toString() === req.user._id.toString()
     )
-    if (isReviewed) {
-        product.reviews.forEach(review => {
-            if (review.user.toString() === req.user._id.toString()) {
-                review.comment = comment;
-                review.rating = rating;
-            }
-        })
+    if (existing) {
+        existing.comment = cleanComment
+        existing.rating = stars
     } else {
-        product.reviews.push(review);
-        product.numOfReviews = product.reviews.length
+        product.reviews.push({
+            user: req.user._id,
+            name: req.user.name,
+            rating: stars,
+            comment: cleanComment
+        })
     }
+    product.numOfReviews = product.reviews.length
     product.ratings = product.reviews.reduce((acc, item) => item.rating + acc, 0) / product.reviews.length
     await product.save({ validateBeforeSave: false });
-    if (!product)
-        return res.status(400).json({
-            success: false,
-            message: 'review not posted'
-        })
+
     return res.status(200).json({
-        success: true
+        success: true,
+        updated: !!existing,
+        masked: cleanComment !== comment.trim()
     })
 }
 

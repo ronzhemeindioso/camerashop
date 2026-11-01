@@ -7,12 +7,14 @@ import Slider from '@mui/material/Slider'
 import Pagination from '@mui/material/Pagination'
 import { useDispatch, useSelector } from 'react-redux'
 
-import { getProducts } from '../actions/productActions'
+import { getProducts, setProductFilters, resetProductFilters } from '../actions/productActions'
 
 const PURPLE = '#7e3d84'
 
 const Home = () => {
     const { loading, products, resPerPage, filteredProductsCount } = useSelector(state => state.products);
+    // rating + review-count filters live in the Redux store
+    const { minRating, minReviews } = useSelector(state => state.productFilters);
     // `price` is what we fetch with; `priceDraft` follows the slider while it is being dragged
     const [price, setPrice] = useState([1, 1000]);
     const [priceDraft, setPriceDraft] = useState([1, 1000]);
@@ -24,8 +26,8 @@ const Home = () => {
     const count = filteredProductsCount
 
     useEffect(() => {
-        dispatch(getProducts(currentPage, keyword, price,))
-    }, [currentPage, keyword, price,]);
+        dispatch(getProducts(currentPage, keyword, price, '', { minRating, minReviews }))
+    }, [currentPage, keyword, price, minRating, minReviews]);
 
     const applyPrice = (event, value) => {
         setCurrentPage(1)
@@ -39,6 +41,25 @@ const Home = () => {
     }
 
     const priceIsFiltered = price[0] !== 1 || price[1] !== 1000
+
+    const applyRating = (value) => {
+        setCurrentPage(1)
+        dispatch(setProductFilters({ minRating: minRating === value ? 0 : value }))
+    }
+
+    const applyMinReviews = (value) => {
+        setCurrentPage(1)
+        dispatch(setProductFilters({ minReviews: Number(value) }))
+    }
+
+    const clearAllFilters = () => {
+        setCurrentPage(1)
+        setPriceDraft([1, 1000])
+        setPrice([1, 1000])
+        dispatch(resetProductFilters())
+    }
+
+    const anyFilter = priceIsFiltered || minRating > 0 || minReviews > 0
 
     return (
         <>
@@ -82,6 +103,43 @@ const Home = () => {
                             <button type="button" className="filter-clear" onClick={resetPrice}>Clear price filter</button>
                         )}
                     </div>
+
+                    <div className="filter-card">
+                        <h2>Rating</h2>
+                        {[4, 3, 2, 1].map(stars => (
+                            <label key={stars} style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', marginBottom: 6 }}>
+                                <input
+                                    type="radio"
+                                    name="ratingFilter"
+                                    checked={minRating === stars}
+                                    onChange={() => applyRating(stars)}
+                                    onClick={() => { if (minRating === stars) applyRating(stars) }}
+                                />
+                                <span aria-label={`${stars} stars and up`}>
+                                    {'★'.repeat(stars)}<span style={{ color: '#ccc' }}>{'★'.repeat(5 - stars)}</span> &amp; up
+                                </span>
+                            </label>
+                        ))}
+                    </div>
+
+                    <div className="filter-card">
+                        <h2>Reviews</h2>
+                        <select
+                            className="form-control"
+                            value={minReviews}
+                            onChange={(e) => applyMinReviews(e.target.value)}
+                            aria-label="Minimum number of reviews"
+                        >
+                            <option value={0}>Any number of reviews</option>
+                            <option value={1}>1+ reviews</option>
+                            <option value={5}>5+ reviews</option>
+                            <option value={10}>10+ reviews</option>
+                        </select>
+                    </div>
+
+                    {anyFilter && (
+                        <button type="button" className="filter-clear" onClick={clearAllFilters}>Clear all filters</button>
+                    )}
                 </aside>
 
                 <section className="store-results">
@@ -96,7 +154,7 @@ const Home = () => {
                         <div className="store-empty">
                             <i className="fa fa-search" aria-hidden="true"></i>
                             <h2>No products found</h2>
-                            <p>Try a different search or widen the price range.</p>
+                            <p>Try a different search or loosen the filters.</p>
                         </div>
                     ) : (
                         <div className="product-grid">
