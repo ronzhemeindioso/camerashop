@@ -32,6 +32,9 @@ import {
     NEW_REVIEW_RESET,
     SET_PRODUCT_FILTERS,
     RESET_PRODUCT_FILTERS,
+    MORE_PRODUCTS_REQUEST,
+    MORE_PRODUCTS_SUCCESS,
+    MORE_PRODUCTS_FAIL,
     CLEAR_ERRORS
 } from '../constants/productConstants'
 
@@ -55,6 +58,21 @@ export const productsReducer = (state = { products: [] }, action) => {
                 resPerPage: action.payload.resPerPage,
                 filteredProductsCount: action.payload.filteredProductsCount
             }
+        case MORE_PRODUCTS_REQUEST:
+            return { ...state, loadingMore: true }
+        case MORE_PRODUCTS_SUCCESS: {
+            // append the next page (skip any product that is already in the list)
+            const have = new Set((state.products || []).map(p => p._id))
+            const fresh = action.payload.products.filter(p => !have.has(p._id))
+            return {
+                ...state,
+                loadingMore: false,
+                products: [...(state.products || []), ...fresh],
+                filteredProductsCount: action.payload.filteredProductsCount
+            }
+        }
+        case MORE_PRODUCTS_FAIL:
+            return { ...state, loadingMore: false, error: action.payload }
         case ADMIN_PRODUCTS_SUCCESS:
             return {
                 ...state,
@@ -240,12 +258,12 @@ export const productReducer = (state = {}, action) => {
 
 
 // rating / review-count filters used on the home page
-export const productFiltersReducer = (state = { minRating: 0, minReviews: 0 }, action) => {
+export const productFiltersReducer = (state = { minRating: 0, minReviews: 0, category: '' }, action) => {
     switch (action.type) {
         case SET_PRODUCT_FILTERS:
             return { ...state, ...action.payload }
         case RESET_PRODUCT_FILTERS:
-            return { minRating: 0, minReviews: 0 }
+            return { minRating: 0, minReviews: 0, category: '' }
         default:
             return state
     }

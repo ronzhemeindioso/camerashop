@@ -58,6 +58,11 @@ class APIFeatures {
             priceFilter.numOfReviews = { $gte: minReviews };
         }
 
+        // category filter: ?category=Lenses  ->  exact match on the product category
+        if (typeof queryCopy.category === 'string' && queryCopy.category.trim()) {
+            priceFilter.category = queryCopy.category.trim();
+        }
+
         this.query = this.query.find(priceFilter);
         return this;
     }

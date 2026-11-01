@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { useParams } from 'react-router-dom'
 import MetaData from './Layout/MetaData'
 import Product from './Product/Product'
@@ -7,27 +7,58 @@ import Slider from '@mui/material/Slider'
 import Pagination from '@mui/material/Pagination'
 import { useDispatch, useSelector } from 'react-redux'
 
-import { getProducts, setProductFilters, resetProductFilters } from '../actions/productActions'
+import { getProducts, loadMoreProducts, setProductFilters, resetProductFilters } from '../actions/productActions'
+import { PRODUCT_CATEGORIES } from '../validation/schemas'
 
 const PURPLE = '#7e3d84'
 
 const Home = () => {
-    const { loading, products, resPerPage, filteredProductsCount } = useSelector(state => state.products);
+    const { loading, loadingMore, products, resPerPage, filteredProductsCount } = useSelector(state => state.products);
     // rating + review-count filters live in the Redux store
-    const { minRating, minReviews } = useSelector(state => state.productFilters);
+    const { minRating, minReviews, category } = useSelector(state => state.productFilters);
     // `price` is what we fetch with; `priceDraft` follows the slider while it is being dragged
     const [price, setPrice] = useState([1, 1000]);
     const [priceDraft, setPriceDraft] = useState([1, 1000]);
     const [currentPage, setCurrentPage] = useState(1)
+    // how the product list is paged: 'scroll' = infinite scroll, 'pages' = numbered pagination
+    const [viewMode, setViewMode] = useState('scroll')
+    const sentinelRef = useRef(null)
     let { keyword } = useParams();
     const dispatch = useDispatch();
+
+    // a new search starts again from page 1
+    const [prevKeyword, setPrevKeyword] = useState(keyword)
+    if (keyword !== prevKeyword) {
+        setPrevKeyword(keyword)
+        setCurrentPage(1)
+    }
 
     // Total products matching the current search and price filter
     const count = filteredProductsCount
 
+    const filters = { minRating, minReviews }
+
     useEffect(() => {
-        dispatch(getProducts(currentPage, keyword, price, '', { minRating, minReviews }))
-    }, [currentPage, keyword, price, minRating, minReviews]);
+        if (viewMode === 'scroll' && currentPage > 1) {
+            // infinite scroll: add the next page to the list
+            dispatch(loadMoreProducts(currentPage, keyword, price, category, filters))
+        } else {
+            dispatch(getProducts(currentPage, keyword, price, category, filters))
+        }
+    }, [currentPage, keyword, price, minRating, minReviews, category, viewMode]);
+
+    // infinite scroll: when the marker at the bottom of the list comes into view, load the next page
+    const hasMore = products.length < count
+    useEffect(() => {
+        if (viewMode !== 'scroll' || loading || loadingMore || !hasMore) return
+        const el = sentinelRef.current
+        if (!el) return
+        const observer = new IntersectionObserver((entries) => {
+            if (entries[0].isIntersecting) setCurrentPage(p => p + 1)
+        }, { rootMargin: '300px' })
+        observer.observe(el)
+        return () => observer.disconnect()
+    }, [viewMode, loading, loadingMore, hasMore, products.length]);
 
     const applyPrice = (event, value) => {
         setCurrentPage(1)
@@ -52,6 +83,16 @@ const Home = () => {
         dispatch(setProductFilters({ minReviews: Number(value) }))
     }
 
+    const applyCategory = (value) => {
+        setCurrentPage(1)
+        dispatch(setProductFilters({ category: value }))
+    }
+
+    const changeViewMode = (mode) => {
+        setCurrentPage(1)
+        setViewMode(mode)
+    }
+
     const clearAllFilters = () => {
         setCurrentPage(1)
         setPriceDraft([1, 1000])
@@ -59,7 +100,7 @@ const Home = () => {
         dispatch(resetProductFilters())
     }
 
-    const anyFilter = priceIsFiltered || minRating > 0 || minReviews > 0
+    const anyFilter = priceIsFiltered || minRating > 0 || minReviews > 0 || category !== ''
 
     return (
         <>
@@ -82,6 +123,21 @@ const Home = () => {
 
             <div className="store-layout" id="products">
                 <aside className="store-sidebar">
+                    <div className="filter-card">
+                        <h2>Category</h2>
+                        <select
+                            className="form-control"
+                            value={category}
+                            onChange={(e) => applyCategory(e.target.value)}
+                            aria-label="Category"
+                        >
+                            <option value="">All categories</option>
+                            {PRODUCT_CATEGORIES.map(c => (
+                                <option key={c} value={c}>{c}</option>
+                            ))}
+                        </select>
+                    </div>
+
                     <div className="filter-card">
                         <h2>Price</h2>
                         <Slider
@@ -148,6 +204,24 @@ const Home = () => {
                         {!loading && <span className="store-count">{count} {count === 1 ? 'product' : 'products'}</span>}
                     </div>
 
+                    <div style={{ display: 'flex', gap: 8, margin: '0 0 16px' }}>
+                        {[['scroll', 'Infinite scroll'], ['pages', 'Pages']].map(([mode, label]) => (
+                            <button
+                                key={mode}
+                                type="button"
+                                onClick={() => changeViewMode(mode)}
+                                style={{
+                                    padding: '6px 14px', borderRadius: 999, cursor: 'pointer', fontSize: 14,
+                                    border: `1px solid ${PURPLE}`,
+                                    background: viewMode === mode ? PURPLE : '#fff',
+                                    color: viewMode === mode ? '#fff' : PURPLE,
+                                }}
+                            >
+                                {label}
+                            </button>
+                        ))}
+                    </div>
+
                     {loading ? (
                         <div className="store-loading"><Loader /></div>
                     ) : products.length === 0 ? (
@@ -164,7 +238,13 @@ const Home = () => {
                         </div>
                     )}
 
-                    {!loading && resPerPage < count && (
+                    {viewMode === 'scroll' && !loading && products.length > 0 && (
+                        <div ref={sentinelRef} style={{ textAlign: 'center', padding: '24px 0', color: '#7e3d84' }}>
+                            {loadingMore ? 'Loading more products...' : hasMore ? '' : "You've reached the end"}
+                        </div>
+                    )}
+
+                    {viewMode === 'pages' && !loading && resPerPage < count && (
                         <div className="store-pagination">
                             <Pagination
                                 count={Math.ceil(count / resPerPage)}

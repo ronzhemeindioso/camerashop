@@ -29,8 +29,26 @@ import {
     NEW_REVIEW_FAIL,
     SET_PRODUCT_FILTERS,
     RESET_PRODUCT_FILTERS,
+    MORE_PRODUCTS_REQUEST,
+    MORE_PRODUCTS_SUCCESS,
+    MORE_PRODUCTS_FAIL,
     CLEAR_ERRORS
 } from '../constants/productConstants';
+
+// builds the /products URL: page + search + price + category + rating + review-count filters
+const productsLink = (currentPage, keyword, price, category, filters = {}) => {
+    let link = `${import.meta.env.VITE_API}/products?page=${currentPage}&keyword=${keyword}&price[lte]=${price[1]}&price[gte]=${price[0]}`
+    if (category) {
+        link += `&category=${encodeURIComponent(category)}`
+    }
+    if (filters.minRating > 0) {
+        link += `&ratings[gte]=${filters.minRating}`
+    }
+    if (filters.minReviews > 0) {
+        link += `&numOfReviews[gte]=${filters.minReviews}`
+    }
+    return link
+}
 
 // filters: { minRating, minReviews } - both optional (0 / undefined = no filter)
 export const getProducts = (currentPage = 1, keyword = '', price, category = '', filters = {}) => async (dispatch) => {
@@ -39,18 +57,7 @@ export const getProducts = (currentPage = 1, keyword = '', price, category = '',
             type: ALL_PRODUCTS_REQUEST
         })
 
-        let link = `${import.meta.env.VITE_API}/products?page=${currentPage}&keyword=${keyword}&price[lte]=${price[1]}&price[gte]=${price[0]}`
-
-        if (category) {
-            link += `&category=${category}`
-        }
-        if (filters.minRating > 0) {
-            link += `&ratings[gte]=${filters.minRating}`
-        }
-        if (filters.minReviews > 0) {
-            link += `&numOfReviews[gte]=${filters.minReviews}`
-        }
-        const { data } = await axios.get(link)
+        const { data } = await axios.get(productsLink(currentPage, keyword, price, category, filters))
         dispatch({
             type: ALL_PRODUCTS_SUCCESS,
             payload: data
@@ -64,7 +71,21 @@ export const getProducts = (currentPage = 1, keyword = '', price, category = '',
     }
 }
 
-// keeps the rating / review-count filters in the Redux store
+// infinite scroll: fetch the next page and ADD it to the products already shown
+export const loadMoreProducts = (currentPage, keyword = '', price, category = '', filters = {}) => async (dispatch) => {
+    try {
+        dispatch({ type: MORE_PRODUCTS_REQUEST })
+        const { data } = await axios.get(productsLink(currentPage, keyword, price, category, filters))
+        dispatch({ type: MORE_PRODUCTS_SUCCESS, payload: data })
+    } catch (error) {
+        dispatch({
+            type: MORE_PRODUCTS_FAIL,
+            payload: error.response?.data?.message || error.message
+        })
+    }
+}
+
+// keeps the category / rating / review-count filters in the Redux store
 export const setProductFilters = (filters) => (dispatch) => {
     dispatch({ type: SET_PRODUCT_FILTERS, payload: filters })
 }
