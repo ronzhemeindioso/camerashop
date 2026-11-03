@@ -30,7 +30,7 @@ const Landing = () => {
 
     // load the newest products (used for the photo collage and "Latest arrivals")
     useEffect(() => {
-        dispatch(getProducts(1, '', [1, 1000], '', {}))
+        dispatch(getProducts(1, '', [1, 100000], '', {}))
     }, [dispatch])
 
     const latest = (products || []).slice(0, 4)

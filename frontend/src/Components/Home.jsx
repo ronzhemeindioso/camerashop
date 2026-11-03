@@ -18,8 +18,8 @@ const Home = () => {
     // rating + review-count filters live in the Redux store
     const { minRating, minReviews, category } = useSelector(state => state.productFilters);
     // `price` is what we fetch with; `priceDraft` follows the slider while it is being dragged
-    const [price, setPrice] = useState([1, 1000]);
-    const [priceDraft, setPriceDraft] = useState([1, 1000]);
+    const [price, setPrice] = useState([1, 100000]);
+    const [priceDraft, setPriceDraft] = useState([1, 100000]);
     const [currentPage, setCurrentPage] = useState(1)
     // how the product list is paged: 'scroll' = infinite scroll, 'pages' = numbered pagination
     const [viewMode, setViewMode] = useState('scroll')
@@ -77,11 +77,11 @@ const Home = () => {
 
     const resetPrice = () => {
         setCurrentPage(1)
-        setPriceDraft([1, 1000])
-        setPrice([1, 1000])
+        setPriceDraft([1, 100000])
+        setPrice([1, 100000])
     }
 
-    const priceIsFiltered = price[0] !== 1 || price[1] !== 1000
+    const priceIsFiltered = price[0] !== 1 || price[1] !== 100000
 
     const applyRating = (value) => {
         setCurrentPage(1)
@@ -105,8 +105,8 @@ const Home = () => {
 
     const clearAllFilters = () => {
         setCurrentPage(1)
-        setPriceDraft([1, 1000])
-        setPrice([1, 1000])
+        setPriceDraft([1, 100000])
+        setPrice([1, 100000])
         dispatch(resetProductFilters())
     }
 
@@ -160,7 +160,7 @@ const Home = () => {
                                 valueLabelDisplay="auto"
                                 getAriaValueText={(v) => `$${v}`}
                                 min={1}
-                                max={1000}
+                                max={100000}
                                 sx={{ color: PURPLE, mt: 1 }}
                             />
                             <div className="filter-range">
