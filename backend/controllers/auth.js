@@ -8,9 +8,18 @@ const sendToken = require('../utils/jwtToken');
    const { getAuth } = require('firebase-admin/auth')
    const path = require('path')
 
+   // On Render the key is stored in the FIREBASE_SERVICE_ACCOUNT environment variable (paste the whole JSON).
+   // On your computer it is read from config/firebase-service-account.json.
+   const loadFirebaseKey = () => {
+       if (process.env.FIREBASE_SERVICE_ACCOUNT) {
+           return JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT)
+       }
+       return require(path.join(__dirname, '../config/firebase-service-account.json'))
+   }
+
    if (!getApps().length) {
        initializeApp({
-           credential: cert(require(path.join(__dirname, '../config/firebase-service-account.json'))),
+           credential: cert(loadFirebaseKey()),
        })
    }
 

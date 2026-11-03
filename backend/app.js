@@ -8,8 +8,13 @@ const order = require('./routes/order');
 const voucher = require('./routes/voucher');
 
 // app.use(cors());
+// Which website may call this API. On Render, set FRONTEND_URL to your Vercel address
+// (several addresses can be separated with commas).
+const allowedOrigins = (process.env.FRONTEND_URL || 'http://localhost:5173')
+    .split(',')
+    .map(url => url.trim().replace(/\/$/, ''))
 app.use(cors({
-    origin: "http://localhost:5173",
+    origin: allowedOrigins,
     credentials: true
 }));
 app.use(cookieParser());
