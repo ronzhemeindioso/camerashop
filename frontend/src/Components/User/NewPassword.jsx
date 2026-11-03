@@ -24,7 +24,7 @@ const NewPassword = () => {
                     'Content-Type': 'application/json'
                 }
             }
-            const { data } = await axios.put(`http://localhost:4000/api/v1/password/reset/${token}`, passwords, config)
+            const { data } = await axios.put(`${import.meta.env.VITE_API}/password/reset/${token}`, passwords, config)
             
             setSuccess(data.success)
         } catch (error) {
