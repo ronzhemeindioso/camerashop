@@ -112,7 +112,7 @@ const seedCameraProducts = async () => {
 
         if (fresh) {
             // only touches the camera categories, other products stay
-            const { deletedCount } = await Product.deleteMany({ category: { $in: CATEGORIES } });
+            const { deletedCount } = await Product.deleteMany();
             console.log(`Old camera products cleared (${deletedCount})...`);
         }
 

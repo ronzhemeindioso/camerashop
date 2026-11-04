@@ -34,7 +34,7 @@ export const loginSchema = yup.object({
 })
 
 /* ---------------- Product (new + update) ---------------- */
-// The backend caps price and stock at 5 characters, hence the 99999 limit.
+// The backend caps price and stock at 5 characters, hence the 999999 limit.
 export const productSchema = yup.object({
     name: yup.string().trim()
         .required('Product name is required')
@@ -42,11 +42,11 @@ export const productSchema = yup.object({
         .max(100, 'Name cannot exceed 100 characters'),
     price: num('Sell price')
         .min(0.01, 'Sell price must be greater than 0')
-        .max(99999, 'Sell price cannot exceed 99999')
+        .max(999999, 'Sell price cannot exceed 999999')
         .moreThan(yup.ref('costPrice'), 'Sell price must be higher than cost price'),
     costPrice: num('Cost price')
         .min(0, 'Cost price cannot be negative')
-        .max(99999, 'Cost price cannot exceed 99999'),
+        .max(999999, 'Cost price cannot exceed 999999'),
     description: yup.string().trim()
         .required('Description is required')
         .min(10, 'Description must be at least 10 characters')
@@ -57,7 +57,7 @@ export const productSchema = yup.object({
     stock: num('Stock')
         .integer('Stock must be a whole number')
         .min(0, 'Stock cannot be negative')
-        .max(99999, 'Stock cannot exceed 99999'),
+        .max(999999, 'Stock cannot exceed 999999'),
     seller: yup.string().trim()
         .required('Seller name is required')
         .max(50, 'Seller name cannot exceed 50 characters'),
