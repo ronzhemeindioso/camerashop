@@ -70,6 +70,12 @@ const orderSchema = mongoose.Schema({
         },
         status: {
             type: String
+        },
+        // how the customer pays: online by card, or cash on delivery
+        method: {
+            type: String,
+            enum: ['Card', 'COD'],
+            default: 'Card'
         }
     },
     paidAt: {

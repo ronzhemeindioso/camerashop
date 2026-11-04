@@ -46,3 +46,8 @@ export const errMsg = (message = '') => toast.error(message, {
 export const successMsg = (message = '') => toast.success(message, {
     position: 'bottom-right'
 });
+// Currency used across the storefront (Philippine peso)
+export const CURRENCY = '₱'
+export const TAX_RATE = 0.02 // 2% tax (was 5%)
+export const peso = (value) =>
+    `${CURRENCY}${Number(value || 0).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`

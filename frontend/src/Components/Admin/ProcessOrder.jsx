@@ -395,7 +395,8 @@ const ProcessOrder = () => {
                                     </dl>
 
                                     <div className="po-payline po-money">
-                                        <span className={`adm-pill dot ${isRefunded ? 'maroon' : isPaid ? 'green' : 'red'}`}>{isRefunded ? 'Refunded' : isPaid ? 'Paid' : 'Not paid'}</span>
+                                        <span className={`adm-pill dot ${isRefunded ? 'maroon' : isPaid ? 'green' : 'red'}`}>{isRefunded ? 'Refunded' : isPaid ? 'Paid' : (paymentInfo && paymentInfo.method === 'COD' ? 'Pay on delivery' : 'Not paid')}</span>
+                                        {paymentInfo && <span>{paymentInfo.method === 'COD' ? 'Cash on Delivery' : 'Card'}</span>}
                                         {paidAt && <span>Paid on {formatDateTime(paidAt)}</span>}
                                         {paymentInfo && paymentInfo.id && (
                                             <span className="po-payid">Payment ID <span className="adm-mono po-break">{paymentInfo.id}</span></span>

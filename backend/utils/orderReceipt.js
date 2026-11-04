@@ -138,7 +138,7 @@ exports.buildReceiptPdf = (order, customerName, customerEmail) => new Promise((r
     const pay = order.paymentInfo || {}
     const paid = pay.status === 'succeeded'
     const orderNo = String(order._id).slice(-8).toUpperCase()
-    const payText = order.orderStatus === 'Refunded' ? 'Refunded' : (paid ? 'Paid' : 'Unpaid')
+    const payText = order.orderStatus === 'Refunded' ? 'Refunded' : (paid ? 'Paid' : (pay.method === 'COD' ? 'Pay on delivery' : 'Unpaid'))
 
     const heading = (text, x, y) => doc.fillColor(C.main).font('Helvetica-Bold').fontSize(8.5)
         .text(text.toUpperCase(), x, y, { characterSpacing: 1, lineBreak: false })
@@ -196,6 +196,7 @@ exports.buildReceiptPdf = (order, customerName, customerEmail) => new Promise((r
 
     heading('Payment', X2, top)
     let yR = top + 18
+    yR = row('Method', pay.method === 'COD' ? 'Cash on Delivery' : 'Card', X2, yR, R - X2, 62)
     yR = row('Status', payText, X2, yR, R - X2, 62, true)
     if (order.paidAt) yR = row('Paid on', fmtDate(order.paidAt), X2, yR, R - X2, 62)
     yR = row('Reference', pay.id || '-', X2, yR, R - X2, 62)

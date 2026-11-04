@@ -1,0 +1,255 @@
+/* =====================================================================
+   My Orders + Order Details + Write Review pop-up
+   Matches the storefront theme (storefront.css): cream + champagne gold,
+   plum accent, Georgia headings, gold top borders, pill buttons.
+   All class names start with "od-" so nothing else on the site is affected.
+   ===================================================================== */
+
+/* purple tones used on these pages */
+:root {
+  --od-lav: #f3ebf6;        /* light lavender (table header, totals) */
+  --od-lav-line: #e3d3ea;   /* lavender borders */
+  --od-plum-dark: #5e2f66;
+}
+
+/* ---------- page ---------- */
+.od-page {
+  width: 100%;
+  box-sizing: border-box;
+  max-width: 1100px;
+  margin: 2.5rem auto 4.5rem;
+  padding: 0 1.5rem;
+  text-align: left;
+  color: var(--sf-ink);
+}
+.od-page--narrow { max-width: 820px; }
+
+.od-back {
+  display: inline-block;
+  margin-bottom: 1.2rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--sf-plum);
+  text-decoration: none !important;
+}
+.od-back:hover { color: var(--sf-pink); }
+
+/* ---------- page heading (simple, no banner) ---------- */
+.od-head { margin-bottom: 1.6rem; }
+.od-title {
+  margin: 0 0 0.3rem;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 1.7rem;
+  font-weight: 600;
+  letter-spacing: -0.3px;
+  line-height: 1.2;
+  color: var(--sf-ink);
+}
+.od-title::after { content: ""; display: block; width: 48px; height: 3px; margin-top: 0.7rem; background: var(--sf-grad); }
+.od-subtitle { margin: 0.8rem 0 0; color: var(--sf-soft); font-size: 0.88rem; word-break: break-all; }
+
+/* ---------- card ---------- */
+.od-card {
+  background: #fff;
+  border: 1px solid var(--od-lav-line);
+  border-top: 3px solid var(--sf-plum);
+  border-radius: 3px;
+  margin-bottom: 1.5rem;
+  box-sizing: border-box;
+}
+.od-card-title {
+  margin: 0;
+  padding: 1rem 1.6rem 0.9rem;
+  border-bottom: 1px solid var(--od-lav-line);
+  background: var(--od-lav);
+  font-family: inherit;
+  font-size: 0.74rem;
+  font-weight: 800;
+  letter-spacing: 2.5px;
+  text-transform: uppercase;
+  color: var(--sf-plum);
+}
+.od-card-body { padding: 1.4rem 1.6rem; }
+
+/* ---------- status: dot + text ---------- */
+.od-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.od-chip::before {
+  content: "";
+  width: 9px; height: 9px;
+  border-radius: 50%;
+  background: currentColor;
+}
+.od-chip--green { color: #2e7d32; }
+.od-chip--blue  { color: #1a5fb4; }
+.od-chip--amber { color: #a9701a; }
+.od-chip--red   { color: #b3261e; }
+
+/* ---------- buttons (same look as the storefront .sf-btn, smaller) ---------- */
+.od-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.35rem 0.95rem;
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 600;
+  line-height: 1.3;
+  border-radius: 999px;
+  border: 2px solid var(--sf-plum);
+  background: #fff;
+  color: var(--sf-plum) !important;
+  text-decoration: none !important;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.2s, transform 0.2s, box-shadow 0.2s;
+}
+.od-btn:hover { background: var(--od-lav); }
+.od-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+/* main action: plum gradient with a gold ring */
+.od-btn--solid {
+  background: var(--sf-plum);
+  color: #fff !important;
+  border-color: var(--sf-plum);
+}
+.od-btn--solid:hover { background: var(--od-plum-dark); border-color: var(--od-plum-dark); }
+/* quiet button (View details, Cancel) */
+.od-btn--ghost { border-color: #d9c3e0; color: var(--sf-ink) !important; }
+.od-btn--ghost:hover { border-color: var(--sf-plum); background: var(--od-lav); }
+
+.od-actions { display: flex; gap: 0.5rem; align-items: center; height: 100%; }
+
+/* ---------- orders table (DataGrid) ---------- */
+.od-grid { background: #fff; border: 1px solid var(--od-lav-line); border-top: 3px solid var(--sf-plum); border-radius: 3px; overflow: hidden; }
+.od-grid .MuiDataGrid-root { border: none; font-family: inherit; font-size: 0.85rem; color: var(--sf-soft); }
+.od-grid .MuiDataGrid-cell,
+.od-grid .MuiTablePagination-root,
+.od-grid .MuiTablePagination-selectLabel,
+.od-grid .MuiTablePagination-displayedRows,
+.od-grid .MuiTablePagination-select { font-family: inherit; font-size: 0.85rem; }
+/* no sideways scrollbar on desktop (the columns are sized to fit) */
+@media (min-width: 900px) {
+  .od-grid .MuiDataGrid-virtualScroller { overflow-x: hidden !important; }
+  .od-grid .MuiDataGrid-scrollbar--horizontal { display: none !important; }
+}
+.od-grid .MuiDataGrid-columnHeaders { background: var(--od-lav); border-bottom: 1px solid var(--od-lav-line); }
+.od-grid .MuiDataGrid-columnHeader { background: var(--od-lav); }
+.od-grid .MuiDataGrid-columnHeaderTitle {
+  font-size: 0.68rem; font-weight: 800; letter-spacing: 2px;
+  text-transform: uppercase; color: var(--sf-plum);
+}
+.od-grid .MuiDataGrid-columnSeparator { display: none !important; }
+.od-grid .MuiDataGrid-cell { display: flex; align-items: center; border-color: var(--od-lav-line); }
+.od-grid .MuiDataGrid-cell:focus,
+.od-grid .MuiDataGrid-cell:focus-within,
+.od-grid .MuiDataGrid-columnHeader:focus,
+.od-grid .MuiDataGrid-columnHeader:focus-within { outline: none; }
+.od-grid .MuiDataGrid-row:hover { background: #faf6fc; }
+.od-grid .MuiDataGrid-footerContainer { border-color: var(--od-lav-line); }
+.od-orderid { font-size: 0.85rem; color: var(--sf-ink); word-break: break-all; }
+.od-amount { font-size: 0.85rem; font-weight: 600; color: var(--sf-plum); }
+
+.od-empty { text-align: center; padding: 3rem 1rem; }
+.od-empty p { color: var(--sf-soft); margin-bottom: 1.2rem; font-family: Georgia, serif; font-style: italic; }
+
+/* ---------- order details: summary ---------- */
+.od-summary { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1.4rem 2rem; }
+.od-field > span {
+  display: block;
+  margin-bottom: 0.25rem;
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--sf-pink);
+}
+.od-field p { margin: 0; color: var(--sf-ink); font-size: 0.9rem; word-break: break-word; }
+.od-field--full { grid-column: 1 / -1; }
+.od-pay-ok { color: #2e7d32; font-weight: 700; }
+.od-pay-no { color: #b3261e; font-weight: 700; }
+
+/* ---------- order details: items ---------- */
+.od-item { display: flex; align-items: center; gap: 1.1rem; padding: 1.1rem 1.6rem; border-bottom: 1px solid var(--od-lav-line); }
+.od-item img {
+  width: 72px; height: 72px; object-fit: cover; flex-shrink: 0;
+  background: #fff; padding: 3px;
+  border: 1px solid #d9c3e0; border-radius: 3px;
+}
+.od-item-main { flex: 1; min-width: 0; }
+.od-item-name { display: block; font-weight: 600; font-size: 0.92rem; color: var(--sf-ink) !important; text-decoration: none !important; }
+.od-item-name:hover { color: var(--sf-plum) !important; }
+.od-item-meta { margin: 0.2rem 0 0; font-size: 0.8rem; color: #8a7d70; }
+.od-item-price { min-width: 110px; text-align: right; font-weight: 600; font-size: 0.9rem; color: var(--sf-plum); white-space: nowrap; }
+.od-item-review { flex-shrink: 0; }
+
+/* totals */
+.od-totals { padding: 1.1rem 1.6rem 1.4rem; background: #faf6fc; }
+.od-totals-row { display: flex; justify-content: space-between; padding: 0.25rem 0; font-size: 0.85rem; color: var(--sf-soft); }
+.od-totals-row--grand {
+  margin-top: 0.6rem; padding-top: 0.85rem;
+  border-top: 2px solid var(--sf-plum);
+  font-size: 1rem; font-weight: 700; color: var(--sf-plum);
+}
+
+/* ---------- write review pop-up ---------- */
+.od-modal-bg {
+  position: fixed; inset: 0; z-index: 2000;
+  background: rgba(42, 22, 51, 0.55);
+  display: flex; align-items: center; justify-content: center;
+  padding: 1rem;
+}
+.od-modal {
+  width: 100%; max-width: 480px;
+  background: #fff;
+  border: 1px solid var(--od-lav-line); border-top: 4px solid var(--sf-plum); border-radius: 3px;
+  text-align: left;
+  box-shadow: 0 24px 50px rgba(42, 22, 51, 0.3);
+  max-height: 95vh; overflow-y: auto;
+}
+.od-modal-head { display: flex; justify-content: space-between; align-items: center; gap: 1rem; padding: 1.1rem 1.6rem; border-bottom: 1px solid var(--od-lav-line); background: var(--od-lav); }
+.od-modal-head h3 { margin: 0; font-family: Georgia, serif; font-size: 1.2rem; font-weight: 600; color: var(--sf-ink); }
+.od-modal-close { background: none; border: none; font-size: 1.6rem; line-height: 1; color: #8a7d70; cursor: pointer; padding: 0; }
+.od-modal-close:hover { color: var(--sf-plum); }
+.od-modal-body { padding: 1.3rem 1.6rem 1.6rem; }
+
+.od-modal-product { display: flex; align-items: center; gap: 0.8rem; padding-bottom: 1.1rem; margin-bottom: 1.2rem; border-bottom: 1px solid var(--od-lav-line); }
+.od-modal-product img { width: 48px; height: 48px; object-fit: cover; background: #fff; padding: 2px; border: 1px solid #d9c3e0; border-radius: 3px; }
+.od-modal-product strong { color: var(--sf-ink); font-size: 0.9rem; font-weight: 600; }
+
+.od-label { display: block; font-size: 0.7rem; font-weight: 800; letter-spacing: 2px; text-transform: uppercase; color: var(--sf-plum); margin-bottom: 0.4rem; }
+
+.od-stars { display: flex; align-items: center; gap: 0.1rem; margin-bottom: 1.2rem; }
+.od-star { background: none; border: none; padding: 0 0.12rem; font-size: 1.9rem; line-height: 1; color: #e3d3ea; cursor: pointer; transition: transform 0.1s; }
+.od-star:hover { transform: scale(1.1); }
+.od-star.on { color: var(--sf-plum); }
+.od-star.hover { color: #b58bbd; }
+.od-rating-text { margin-left: 0.7rem; font-size: 0.85rem; color: #8a7d70; }
+
+.od-textarea {
+  display: block; width: 100%; box-sizing: border-box;
+  min-height: 110px; resize: vertical;
+  padding: 0.7rem 0.9rem; font: inherit; font-size: 0.9rem; color: var(--sf-ink);
+  border: 2px solid var(--od-lav-line); border-radius: 12px; outline: none;
+}
+.od-textarea::placeholder { color: #b3a8bb; }
+.od-textarea:focus { border-color: var(--sf-pink); }
+
+.od-modal-foot { display: flex; justify-content: flex-end; gap: 0.7rem; margin-top: 1.3rem; }
+.od-note { margin: 0; color: var(--sf-soft); font-size: 0.92rem; }
+
+@media (max-width: 640px) {
+  .od-page { padding: 0 1rem; }
+  .od-summary { grid-template-columns: 1fr; }
+  .od-item { flex-wrap: wrap; padding: 1rem; }
+  .od-item-review { width: 100%; }
+  .od-item-price { text-align: left; }
+  .od-card-title, .od-card-body, .od-totals { padding-left: 1rem; padding-right: 1rem; }
+}

@@ -115,7 +115,7 @@ const Home = () => {
     // one small tag for each filter that is switched on
     const chips = []
     if (category) chips.push({ label: category, remove: () => applyCategory('') })
-    if (priceIsFiltered) chips.push({ label: `$${price[0]} - $${price[1]}`, remove: resetPrice })
+    if (priceIsFiltered) chips.push({ label: `₱${price[0]} - ₱${price[1]}`, remove: resetPrice })
     if (minRating > 0) chips.push({ label: `${minRating}+ stars`, remove: () => applyRating(minRating) })
     if (minReviews > 0) chips.push({ label: `${minReviews}+ reviews`, remove: () => applyMinReviews(0) })
 
@@ -158,14 +158,14 @@ const Home = () => {
                                 onChange={(e, v) => setPriceDraft(v)}
                                 onChangeCommitted={applyPrice}
                                 valueLabelDisplay="auto"
-                                getAriaValueText={(v) => `$${v}`}
+                                getAriaValueText={(v) => `₱${v}`}
                                 min={1}
                                 max={100000}
                                 sx={{ color: PURPLE, mt: 1 }}
                             />
                             <div className="filter-range">
-                                <span>${priceDraft[0]}</span>
-                                <span>${priceDraft[1]}</span>
+                                <span>₱{priceDraft[0]}</span>
+                                <span>₱{priceDraft[1]}</span>
                             </div>
                         </details>
 

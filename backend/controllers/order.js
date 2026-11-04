@@ -17,9 +17,13 @@ exports.newOrder = async (req, res, next) => {
         shippingPrice,
         totalPrice,
         paymentInfo,
+        paymentMethod,
         voucherCode
 
     } = req.body;
+
+    // Card orders are paid right away. COD orders stay unpaid until the courier collects the cash.
+    const isCOD = String(paymentMethod || '').toUpperCase() === 'COD'
 
     const orderData = {
         orderItems,
@@ -28,8 +32,10 @@ exports.newOrder = async (req, res, next) => {
         taxPrice,
         shippingPrice,
         totalPrice,
-        paymentInfo,
-        paidAt: Date.now(),
+        paymentInfo: isCOD
+            ? { id: 'COD', status: 'pending', method: 'COD' }
+            : { ...(paymentInfo || {}), method: 'Card' },
+        ...(isCOD ? {} : { paidAt: Date.now() }),
         statusHistory: [{ status: 'Processing', at: Date.now() }],
         user: req.user._id
     }
@@ -283,6 +289,11 @@ exports.updateOrder = async (req, res, next) => {
     order.orderStatus = status
     if (status === 'Delivered') {
         order.deliveredAt = Date.now()
+        // cash on delivery: the money is collected when the order is handed over
+        if (order.paymentInfo && order.paymentInfo.method === 'COD' && order.paymentInfo.status !== 'succeeded') {
+            order.paymentInfo.status = 'succeeded'
+            order.paidAt = Date.now()
+        }
     }
     await order.save()
 
@@ -466,9 +477,10 @@ exports.salesPerMonth = async (req, res, next) => {
         {
             $group: {
                 // _id: {month: { $month: "$paidAt" } },
+                // COD orders have no paidAt until they are delivered, so fall back to the order date
                 _id: {
-                    year: { $year: "$paidAt" },
-                    month: { $month: "$paidAt" }
+                    year: { $year: { $ifNull: ["$paidAt", "$createdAt"] } },
+                    month: { $month: { $ifNull: ["$paidAt", "$createdAt"] } }
                 },
                 total: { $sum: "$totalPrice" },
             },

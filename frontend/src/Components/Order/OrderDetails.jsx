@@ -3,121 +3,150 @@ import { Link, useParams } from 'react-router-dom'
 
 import MetaData from '../Layout/MetaData'
 import Loader from '../Layout/Loader'
-import axios from 'axios'
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { useDispatch, useSelector } from 'react-redux'
 
-import { getOrderDetails, clearErrors } from '../../actions/orderActions'
+import { getOrderDetails } from '../../actions/orderActions'
+import { peso } from '../../Utils/helpers'
+import ReviewModal from './ReviewModal'
+import './orders.css'
 
-// import { getToken } from '../../Utils/helpers'
+const statusClass = (status = '') => {
+    if (status.includes('Delivered')) return 'od-chip--green'
+    if (status.includes('Shipped')) return 'od-chip--blue'
+    if (status.includes('Processing')) return 'od-chip--amber'
+    return 'od-chip--red'
+}
 
 const OrderDetails = () => {
-    // const [loading, setLoading] = useState(true)
-    // const [error, setError] = useState('')
-    // const [order, setOrder] = useState({})
     const dispatch = useDispatch();
     const { loading, error, order = {} } = useSelector(state => state.orderDetails)
+    // the product being reviewed in the pop-up (null = closed)
+    const [reviewing, setReviewing] = useState(null)
 
     const { shippingInfo, orderItems, paymentInfo, user, totalPrice, orderStatus } = order
     let { id } = useParams();
 
-    // const getOrderDetails = async (id) => {
-    //     try {
-
-    //         const config = {
-    //             headers: {
-    //                 'Authorization': `Bearer ${getToken()}`
-    //             }
-    //         }
-
-    //         const { data } = await axios.get(`${import.meta.env.VITE_API}/order/${id}`, config)
-    //         console.log(data)
-    //         setOrder(data.order)
-
-    //         setLoading(false)
-
-
-    //     } catch (error) {
-    //         setError(error.response.data.message)
-    //     }
-    // }
-
     useEffect(() => {
         dispatch(getOrderDetails(id))
+    }, [dispatch, id])
 
+    useEffect(() => {
         if (error) {
-            toast.error(error, {
-                position: 'bottom-right'
-            });
+            toast.error(error, { position: 'bottom-right' });
         }
-    }, [error, id])
+    }, [error])
 
     const shippingDetails = shippingInfo && `${shippingInfo.address}, ${shippingInfo.city}, ${shippingInfo.postalCode}, ${shippingInfo.country}`
 
     const isPaid = paymentInfo && paymentInfo.status === 'succeeded' ? true : false
+    const isDelivered = orderStatus === 'Delivered'
 
     return (
         <>
             <MetaData title={'Order Details'} />
 
             {loading ? <Loader /> : (
-                <>
-                    <div className="row d-flex justify-content-between">
-                        <div className="col-12 col-lg-8 mt-5 order-details">
+                <div className="od-page od-page--narrow">
+                    <Link to="/orders/me" className="od-back">&larr; Back to my orders</Link>
 
-                            <h1 className="my-5">Order # {order._id}</h1>
+                    <div className="od-head">
+                        <h1 className="od-title">Order details</h1>
+                        <p className="od-subtitle">
+                            Order #{order._id}
+                            {order.createdAt && <> &middot; Placed on {new Date(order.createdAt).toLocaleDateString('en-PH', { year: 'numeric', month: 'long', day: 'numeric' })}</>}
+                        </p>
+                    </div>
 
-                            <h4 className="mb-4">Shipping Info</h4>
-                            <p><b>Name:</b> {user && user.name}</p>
-                            <p><b>Phone:</b> {shippingInfo && shippingInfo.phoneNo}</p>
-                            <p className="mb-4"><b>Address:</b>{shippingDetails}</p>
-                            {order.discountPrice > 0 && (
-                                <p><b>Voucher:</b> {order.voucher && order.voucher.code} (-${Number(order.discountPrice).toFixed(2)})</p>
-                            )}
-                            <p><b>Amount:</b> ${totalPrice}</p>
-
-                            <hr />
-
-                            <h4 className="my-4">Payment</h4>
-                            <p className={isPaid ? "greenColor" : "redColor"}><b>{isPaid ? "PAID" : "NOT PAID"}</b></p>
-
-
-                            <h4 className="my-4">Order Status:</h4>
-                            <p className={order.orderStatus && String(order.orderStatus).includes('Delivered') ? "greenColor" : "redColor"} ><b>{orderStatus}</b></p>
-
-
-                            <h4 className="my-4">Order Items:</h4>
-
-                            <hr />
-                            <div className="cart-item my-1">
-                                {orderItems && orderItems.map(item => (
-                                    <div key={item.product} className="row my-5">
-                                        <div className="col-4 col-lg-2">
-                                            <img src={item.image} alt={item.name} height="45" width="65" />
-                                        </div>
-
-                                        <div className="col-5 col-lg-5">
-                                            <Link to={`/products/${item.product}`}>{item.name}</Link>
-                                        </div>
-
-
-                                        <div className="col-4 col-lg-2 mt-4 mt-lg-0">
-                                            <p>${item.price}</p>
-                                        </div>
-
-                                        <div className="col-4 col-lg-3 mt-4 mt-lg-0">
-                                            <p>{item.quantity} Piece(s)</p>
-                                        </div>
+                    <div className="od-card">
+                        <h2 className="od-card-title">Order summary</h2>
+                        <div className="od-card-body">
+                            <div className="od-summary">
+                                <div className="od-field">
+                                    <span>Order status</span>
+                                    <p><span className={`od-chip ${statusClass(orderStatus || '')}`}>{orderStatus}</span></p>
+                                </div>
+                                <div className="od-field">
+                                    <span>Payment</span>
+                                    <p>
+                                        {paymentInfo && paymentInfo.method === 'COD' ? 'Cash on Delivery' : 'Card'}
+                                        {' \u00b7 '}
+                                        <b className={isPaid ? 'od-pay-ok' : 'od-pay-no'}>
+                                            {isPaid ? 'Paid' : (paymentInfo && paymentInfo.method === 'COD' ? 'Pay on delivery' : 'Not paid')}
+                                        </b>
+                                    </p>
+                                </div>
+                                <div className="od-field">
+                                    <span>Name</span>
+                                    <p>{user && user.name}</p>
+                                </div>
+                                <div className="od-field">
+                                    <span>Phone</span>
+                                    <p>{shippingInfo && shippingInfo.phoneNo}</p>
+                                </div>
+                                <div className="od-field od-field--full">
+                                    <span>Shipping address</span>
+                                    <p>{shippingDetails}</p>
+                                </div>
+                                {order.trackingNumber && (
+                                    <div className="od-field od-field--full">
+                                        <span>Tracking number</span>
+                                        <p>{order.trackingNumber}</p>
                                     </div>
-                                ))}
+                                )}
                             </div>
-                            <hr />
                         </div>
                     </div>
-                </>
+
+                    <div className="od-card">
+                        <h2 className="od-card-title">Items</h2>
+
+                        {orderItems && orderItems.map(item => (
+                            <div key={item.product} className="od-item">
+                                <img src={item.image} alt={item.name} />
+
+                                <div className="od-item-main">
+                                    <Link to={`/product/${item.product}`} className="od-item-name">{item.name}</Link>
+                                    <p className="od-item-meta">Qty {item.quantity} &times; {peso(item.price)}</p>
+                                </div>
+
+                                <span className="od-item-price">{peso(item.price * item.quantity)}</span>
+
+                                {isDelivered && (
+                                    <div className="od-item-review">
+                                        <button
+                                            type="button"
+                                            className="od-btn od-btn--solid"
+                                            onClick={() => setReviewing({ id: item.product, name: item.name, image: item.image })}
+                                        >
+                                            Write a review
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+                        ))}
+
+                        <div className="od-totals">
+                            <div className="od-totals-row"><span>Subtotal</span><span>{peso(order.itemsPrice)}</span></div>
+                            <div className="od-totals-row"><span>Shipping</span><span>{peso(order.shippingPrice)}</span></div>
+                            <div className="od-totals-row"><span>Tax</span><span>{peso(order.taxPrice)}</span></div>
+                            {order.discountPrice > 0 && (
+                                <div className="od-totals-row">
+                                    <span>Voucher{order.voucher && order.voucher.code ? ` (${order.voucher.code})` : ''}</span>
+                                    <span>-{peso(order.discountPrice)}</span>
+                                </div>
+                            )}
+                            <div className="od-totals-row od-totals-row--grand"><span>Total</span><span>{peso(totalPrice)}</span></div>
+                        </div>
+                    </div>
+                </div>
             )}
 
+            <ReviewModal
+                product={reviewing}
+                onClose={() => setReviewing(null)}
+            />
         </>
     )
 }

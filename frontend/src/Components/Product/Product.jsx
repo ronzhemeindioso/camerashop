@@ -1,5 +1,6 @@
 import React from 'react'
 import { Link } from 'react-router-dom';
+import { peso } from '../../Utils/helpers'
 
 const Product = ({ product }) => {
     const image = product.images && product.images[0] ? product.images[0].url : null
@@ -26,7 +27,7 @@ const Product = ({ product }) => {
                     <span id="no_of_reviews">({product.numOfReviews})</span>
                 </div>
 
-                <p className="product-card-price">${product.price}</p>
+                <p className="product-card-price">{peso(product.price)}</p>
             </div>
         </Link>
     )

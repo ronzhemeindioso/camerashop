@@ -4,7 +4,7 @@ import MetaData from '../Layout/MetaData'
 import { Carousel } from 'react-bootstrap'
 
 import 'react-toastify/dist/ReactToastify.css';
-import { successMsg, errMsg } from '../../Utils/helpers'
+import { successMsg, errMsg, peso } from '../../Utils/helpers'
 import ListReviews from '../Review/ListReviews';
 import { useDispatch, useSelector } from 'react-redux'
 import { getProductDetails, clearErrors, checkReviewEligibility, submitReview } from '../../actions/productActions'
@@ -156,7 +156,7 @@ const ProductDetails = () => {
                         <span id="no_of_reviews">({product.numOfReviews} Reviews)</span>
                     </div>
 
-                    <p className="pd-price">${product.price}</p>
+                    <p className="pd-price">{peso(product.price)}</p>
                     <p className="pd-desc">{product.description}</p>
 
                     <div className="pd-buy">

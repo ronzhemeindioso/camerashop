@@ -103,6 +103,11 @@ exports.loginUser = async (req, res, next) => {
             return res.status(401).json({ message: 'Invalid Email or Password' })
         }
 
+        // soft-deleted (trashed) accounts can no longer sign in
+        if (user.deletedAt) {
+            return res.status(403).json({ message: 'This account has been deactivated' })
+        }
+
         if (user.isActive === false) {
             return res.status(403).json({ message: 'Your account is inactive. Please contact the administrator.' })
         }
@@ -161,7 +166,7 @@ exports.socialLogin = async (req, res) => {
 
 exports.forgotPassword = async (req, res, next) => {
     const user = await User.findOne({ email: req.body.email });
-    if (!user) {
+    if (!user || user.deletedAt) {
         return res.status(404).json({ error: 'User not found with this email' })
 
     }
